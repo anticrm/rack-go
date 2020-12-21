@@ -28,7 +28,7 @@ func main() {
 
 	go docker.Run("anticrm/scrn:5")
 
-	server := &http.Server{}
+	server := http.NewServer()
 	url, err := url.Parse("http://localhost:3000")
 	if err != nil {
 		panic(err)
