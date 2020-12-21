@@ -16,12 +16,24 @@
 package main
 
 import (
+	"fmt"
+	"net/url"
+
 	"github.com/anticrm/rack/docker"
+	"github.com/anticrm/rack/http"
 )
 
 func main() {
-	docker.Run()
-	// server := &http.Server{}
-	// err := server.Start()
-	// fmt.Printf("%s\n", err)
+	fmt.Print("rack node (c) 2020 anticrm folks.\n")
+
+	go docker.Run("anticrm/scrn:5")
+
+	server := &http.Server{}
+	url, err := url.Parse("http://localhost:3000")
+	if err != nil {
+		panic(err)
+	}
+	local := http.NewBackend(url)
+	server.AddBackend(local)
+	go server.Start()
 }

@@ -26,21 +26,21 @@ import (
 	"github.com/docker/docker/pkg/stdcopy"
 )
 
-func Run() {
+func Run(image string) {
 	ctx := context.Background()
 	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
 	if err != nil {
 		panic(err)
 	}
 
-	reader, err := cli.ImagePull(ctx, "anticrm/scrn:5", types.ImagePullOptions{})
+	reader, err := cli.ImagePull(ctx, image, types.ImagePullOptions{})
 	if err != nil {
 		panic(err)
 	}
 	io.Copy(os.Stdout, reader)
 
 	resp, err := cli.ContainerCreate(ctx, &container.Config{
-		Image: "anticrm/scrn:5",
+		Image: image,
 		// Cmd:   []string{"echo", "hello world"},
 		Tty: false,
 	}, nil, nil, nil, "")

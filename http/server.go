@@ -17,7 +17,6 @@ package http
 
 import (
 	"crypto/tls"
-	"fmt"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
@@ -26,37 +25,18 @@ import (
 	"golang.org/x/crypto/acme/autocert"
 )
 
-type Server struct {
-	mux *http.ServeMux
-}
-
-func (s *Server) Start() error {
-	s.mux = http.NewServeMux()
-	s.mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintf(w, "Hello Secure World")
-	})
-
-	certManager := autocert.Manager{
-		Prompt: autocert.AcceptTOS,
-		Cache:  autocert.DirCache("certs"),
-	}
-
-	server := &http.Server{
-		Addr:    ":443",
-		Handler: s.mux,
-		TLSConfig: &tls.Config{
-			GetCertificate: certManager.GetCertificate,
-		},
-	}
-
-	go http.ListenAndServe(":80", certManager.HTTPHandler(nil))
-	return server.ListenAndServeTLS("", "")
-}
-
 type Backend struct {
 	URL          *url.URL
 	alive        bool
 	ReverseProxy *httputil.ReverseProxy
+}
+
+func NewBackend(url *url.URL) *Backend {
+	return &Backend{
+		URL:          url,
+		alive:        true,
+		ReverseProxy: httputil.NewSingleHostReverseProxy(url),
+	}
 }
 
 type ServerPool struct {
@@ -80,11 +60,47 @@ func (s *ServerPool) getNextPeer() *Backend {
 	return nil
 }
 
-func (s *ServerPool) roundRobin(w http.ResponseWriter, r *http.Request) {
+func (s *ServerPool) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	peer := s.getNextPeer()
 	if peer != nil {
 		peer.ReverseProxy.ServeHTTP(w, r)
 		return
 	}
 	http.Error(w, "Service not available", http.StatusServiceUnavailable)
+}
+
+type Server struct {
+	pool *ServerPool
+}
+
+func NewServer() *Server {
+	return &Server{
+		pool: &ServerPool{},
+	}
+}
+
+func (s *Server) AddBackend(backend *Backend) {
+	s.pool.backends = append(s.pool.backends, backend)
+}
+
+func (s *Server) Start() error {
+	// s.mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+	// 	fmt.Fprintf(w, "Hello Secure World")
+	// })
+
+	certManager := autocert.Manager{
+		Prompt: autocert.AcceptTOS,
+		Cache:  autocert.DirCache("certs"),
+	}
+
+	server := &http.Server{
+		Addr:    ":443",
+		Handler: s.pool,
+		TLSConfig: &tls.Config{
+			GetCertificate: certManager.GetCertificate,
+		},
+	}
+
+	go http.ListenAndServe(":80", certManager.HTTPHandler(nil))
+	return server.ListenAndServeTLS("", "")
 }
