@@ -15,9 +15,14 @@
 
 package main
 
-import "github.com/anticrm/rack/http"
+import (
+	"fmt"
+
+	"github.com/anticrm/rack/http"
+)
 
 func main() {
 	server := &http.Server{}
-	server.Start("api.screenversation.com")
+	err := server.Start("api.screenversation.com")
+	fmt.Printf("%s\n", err)
 }
