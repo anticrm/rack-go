@@ -19,6 +19,7 @@ import (
 	"context"
 	"io"
 	"os"
+	"strconv"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
@@ -27,7 +28,7 @@ import (
 	"github.com/docker/go-connections/nat"
 )
 
-func Run(image string) {
+func Run(image string, port int) {
 	ctx := context.Background()
 	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
 	if err != nil {
@@ -41,7 +42,7 @@ func Run(image string) {
 	io.Copy(os.Stdout, reader)
 
 	exposedPorts, portBindings, _ := nat.ParsePortSpecs([]string{
-		"127.0.0.1:3000:3000",
+		"127.0.0.1:" + strconv.Itoa(port) + ":3000",
 	})
 
 	resp, err := cli.ContainerCreate(ctx, &container.Config{
