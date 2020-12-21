@@ -24,6 +24,7 @@ import (
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/client"
 	"github.com/docker/docker/pkg/stdcopy"
+	"github.com/docker/go-connections/nat"
 )
 
 func Run(image string) {
@@ -43,6 +44,9 @@ func Run(image string) {
 		Image: image,
 		// Cmd:   []string{"echo", "hello world"},
 		Tty: false,
+		ExposedPorts: nat.PortSet{
+			"3000/tcp": struct{}{},
+		},
 	}, nil, nil, nil, "")
 	if err != nil {
 		panic(err)
