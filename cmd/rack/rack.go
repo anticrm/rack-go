@@ -35,5 +35,5 @@ func main() {
 	}
 	local := http.NewBackend(url)
 	server.AddBackend(local)
-	go server.Start()
+	server.Start()
 }
