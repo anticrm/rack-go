@@ -16,13 +16,12 @@
 package main
 
 import (
-	"fmt"
-
-	"github.com/anticrm/rack/http"
+	"github.com/anticrm/rack/docker"
 )
 
 func main() {
-	server := &http.Server{}
-	err := server.Start()
-	fmt.Printf("%s\n", err)
+	docker.Run()
+	// server := &http.Server{}
+	// err := server.Start()
+	// fmt.Printf("%s\n", err)
 }
