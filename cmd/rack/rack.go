@@ -23,6 +23,6 @@ import (
 
 func main() {
 	server := &http.Server{}
-	err := server.Start("api.screenversation.com")
+	err := server.Start()
 	fmt.Printf("%s\n", err)
 }

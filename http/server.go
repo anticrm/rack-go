@@ -27,7 +27,7 @@ type Server struct {
 	mux *http.ServeMux
 }
 
-func (s *Server) Start(domain string) error {
+func (s *Server) Start() error {
 	s.mux = http.NewServeMux()
 	s.mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintf(w, "Hello Secure World")
@@ -39,13 +39,13 @@ func (s *Server) Start(domain string) error {
 	}
 
 	server := &http.Server{
-		Addr:    domain + ":443",
+		Addr:    ":443",
 		Handler: s.mux,
 		TLSConfig: &tls.Config{
 			GetCertificate: certManager.GetCertificate,
 		},
 	}
 
-	go http.ListenAndServe(domain+":80", certManager.HTTPHandler(nil))
+	go http.ListenAndServe(":80", certManager.HTTPHandler(nil))
 	return server.ListenAndServeTLS("", "")
 }
