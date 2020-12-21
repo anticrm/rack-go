@@ -41,8 +41,8 @@ func Run() {
 
 	resp, err := cli.ContainerCreate(ctx, &container.Config{
 		Image: "anticrm/scrn:5",
-		Cmd:   []string{"echo", "hello world"},
-		Tty:   false,
+		// Cmd:   []string{"echo", "hello world"},
+		Tty: false,
 	}, nil, nil, nil, "")
 	if err != nil {
 		panic(err)
