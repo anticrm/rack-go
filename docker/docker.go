@@ -40,14 +40,20 @@ func Run(image string) {
 	}
 	io.Copy(os.Stdout, reader)
 
+	exposedPorts, portBindings, _ := nat.ParsePortSpecs([]string{
+		"127.0.0.1:3000:3000",
+	})
+
 	resp, err := cli.ContainerCreate(ctx, &container.Config{
 		Image: image,
 		// Cmd:   []string{"echo", "hello world"},
-		Tty: false,
-		ExposedPorts: nat.PortSet{
-			"3000/tcp": struct{}{},
+		Tty:          false,
+		ExposedPorts: exposedPorts,
+	},
+		&container.HostConfig{
+			PortBindings: portBindings,
 		},
-	}, nil, nil, nil, "")
+		nil, nil, "")
 	if err != nil {
 		panic(err)
 	}
