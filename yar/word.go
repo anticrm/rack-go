@@ -13,7 +13,7 @@
 // limitations under the License.
 //
 
-package x
+package yar
 
 import (
 	"fmt"
@@ -26,30 +26,30 @@ import (
 //   BINDING | SYM | KIND |
 //-------------------------
 
-type word = obj
+type Word = obj
 type pWord = pItem
 type bound = imm
 type pBindings = ptr
 type bindFactory func(sym sym, create bool) bound
 
-func _makeWord(sym sym, bindings pBindings, kind int) word {
+func _makeWord(sym sym, bindings pBindings, kind int) Word {
 	return makeObj(int(bindings), ptr(sym), kind)
 }
 
-func (vm *VM) makeWord(sym string) word {
+func (vm *VM) makeWord(sym string) Word {
 	return _makeWord(vm.getSymbolID(sym), 0, WordType)
 }
 
-func (vm *VM) makeSetWord(sym string) word {
+func (vm *VM) makeSetWord(sym string) Word {
 	return _makeWord(vm.getSymbolID(sym), 0, SetWordType)
 }
 
-func (w word) sym() sym            { return sym(obj(w).ptr()) }
-func (w word) bindings() pBindings { return pBindings(obj(w).val()) }
+func (w Word) Sym() sym            { return sym(obj(w).ptr()) }
+func (w Word) bindings() pBindings { return pBindings(obj(w).val()) }
 
 func wordBind(vm *VM, ptr ptr, factory bindFactory) {
-	w := word(vm.read(ptr))
-	sym := w.sym()
+	w := Word(vm.read(ptr))
+	sym := w.Sym()
 	bindings := factory(sym, false)
 	if bindings != 0 {
 		vm.write(ptr, cell(_makeWord(sym, vm.alloc(cell(bindings)), WordType)))
@@ -57,41 +57,42 @@ func wordBind(vm *VM, ptr ptr, factory bindFactory) {
 }
 
 func setWordBind(vm *VM, ptr ptr, factory bindFactory) {
-	w := word(vm.read(ptr))
-	sym := w.sym()
+	w := Word(vm.read(ptr))
+	sym := w.Sym()
 	// fmt.Printf("create bindings %s\n", vm.inverseSymbols[sym])
 	bindings := factory(sym, true)
 	vm.write(ptr, cell(_makeWord(sym, vm.alloc(cell(bindings)), SetWordType)))
 }
 
-func wordExec(pc *pc, val value) value {
+func wordExec(pc *PC, val Value) Value {
+	vm := pc.VM
 	w := val
-	bindings := value(pc.vm.read(w.bindings()))
+	bindings := Value(vm.read(w.bindings()))
 	if bindings == 0 {
-		fmt.Printf("word %s\n", pc.vm.inverseSymbols[w.sym()])
+		fmt.Printf("word %s\n", vm.InverseSymbols[w.Sym()])
 		panic("word not bound")
 	}
-	bindingKind := bindings.kind()
-	bound := pc.vm.getBound[bindingKind](bindings)
-	return pc.vm.execFunc[bound.kind()](pc, bound)
+	bindingKind := bindings.Kind()
+	bound := vm.getBound[bindingKind](bindings)
+	return vm.execFunc[bound.Kind()](pc, bound)
 }
 
-func setWordExec(pc *pc, val value) value {
-	w := word(val)
-	bindings := value(pc.vm.read(w.bindings()))
+func setWordExec(pc *PC, val Value) Value {
+	w := Word(val)
+	bindings := Value(pc.VM.read(w.bindings()))
 	if bindings == 0 {
 		panic("word not bound")
 	}
-	result := pc.next()
-	bindingKind := bindings.kind()
-	pc.vm.setBound[bindingKind](bindings, result)
+	result := pc.Next()
+	bindingKind := bindings.Kind()
+	pc.VM.setBound[bindingKind](bindings, result)
 	return result
 }
 
-func wordToString(vm *VM, value value) string {
+func wordToString(vm *VM, value Value) string {
 	var result strings.Builder
-	w := word(value)
-	result.WriteString(vm.inverseSymbols[w.sym()])
+	w := Word(value)
+	result.WriteString(vm.InverseSymbols[w.Sym()])
 	result.WriteString("(")
 	result.WriteString(strconv.Itoa(int(vm.read(w.bindings()))))
 	result.WriteString(")")

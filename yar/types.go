@@ -13,7 +13,7 @@
 // limitations under the License.
 //
 
-package x
+package yar
 
 type ptr uint
 type cell int64
@@ -38,12 +38,13 @@ const (
 //  X X X X X X X  | KIND |
 //-------------------------
 
-type value cell
+type Value cell
 
 // func (v value) val() int        { return int(v >> 32) }
 // func (v value) ptr() ptr        { return ptr(v&0xffffffff) >> 8 }
-func (v value) kind() int       { return int(v & 0xff) }
-func (v value) immutable() bool { return v.kind()&0x80 != 0 }
+func (v Value) Kind() int { return int(v & 0xff) }
+
+// func (v value) immutable() bool { return v.kind()&0x80 != 0 }
 
 // func makeValue(val int, ptr ptr, kind int) value {
 // 	return value(cell(val)<<32 | cell(ptr)<<8 | cell(kind))
@@ -54,7 +55,7 @@ func (v value) immutable() bool { return v.kind()&0x80 != 0 }
 //  VAL     | PTR  | KIND |
 //-------------------------
 
-type obj = value
+type obj = Value
 
 func (v obj) val() int { return int(v >> 32) }
 func (v obj) ptr() ptr { return ptr(v&0xffffffff) >> 8 }
@@ -87,7 +88,7 @@ func (e pItem) setPtr(vm *VM, next ptr) {
 
 // P R I M I T I V E S
 
-type imm = value
+type imm = Value
 
 func makeImm(value int, kind int) imm {
 	return imm(value<<8 | kind)
@@ -116,8 +117,8 @@ func makeProc(value int) imm {
 	return makeImm(value, ProcType)
 }
 
-func procExec(pc *pc, value value) value {
+func procExec(pc *PC, value Value) Value {
 	i := intValue(value)
-	f := pc.vm.proc[i]
+	f := pc.VM.proc[i]
 	return f(pc)
 }

@@ -13,7 +13,7 @@
 // limitations under the License.
 //
 
-package yar
+package yari
 
 func add(pc *PC, values []Value) Value {
 	return &IntValue{Value: values[0].(*IntValue).Value + values[1].(*IntValue).Value}

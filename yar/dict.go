@@ -13,7 +13,7 @@
 // limitations under the License.
 //
 
-package x
+package yar
 
 type dict = obj
 type pDict ptr

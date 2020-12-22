@@ -13,20 +13,20 @@
 // limitations under the License.
 //
 
-package x
+package yari
 
 import (
 	"fmt"
 	"strings"
 )
 
-type codeStack []pBlock
+type codeStack []Code
 
-func (s *codeStack) push(code pBlock) {
+func (s *codeStack) push(code Code) {
 	*s = append(*s, code)
 }
 
-func (s *codeStack) pop() pBlock {
+func (s *codeStack) pop() Code {
 	index := len(*s) - 1
 	element := (*s)[index]
 	*s = (*s)[:index]
@@ -46,9 +46,9 @@ func readIdent(s string, i *int) string {
 	return ident.String()
 }
 
-func (vm *VM) Parse(s string) pBlock {
+func Parse(s string) Code {
 	var stack codeStack
-	result := vm.allocBlock()
+	var result Code
 	i := 0
 
 	for i < len(s) {
@@ -59,26 +59,26 @@ func (vm *VM) Parse(s string) pBlock {
 			i++
 			code := result
 			result = stack.pop()
-			result.add(vm, ptr(code))
+			result = append(result, &BlockValue{Value: code})
 		case '[':
 			i++
 			stack.push(result)
-			result = vm.allocBlock()
+			result = nil
 		case '0', '1', '2', '3', '4', '5', '6', '7', '8', '9':
 			val := 0
 			for i < len(s) && isDigit(s[i]) {
 				val = val*10 + int(s[i]-'0')
 				i++
 			}
-			result.add(vm, vm.alloc(cell(makeInt(val))))
+			result = append(result, &IntValue{Value: val})
 		default:
-			kind := WordType
+			kind := WordKind
 			c := s[i]
 			if c == '\'' {
-				kind = QuoteType
+				kind = Quote
 				i++
 			} else if c == ':' {
-				kind = GetWordType
+				kind = GetWordKind
 				i++
 			}
 
@@ -86,35 +86,34 @@ func (vm *VM) Parse(s string) pBlock {
 
 			if i < len(s) {
 				if s[i] == ':' {
-					kind = SetWordType
+					kind = SetWordKind
 					i++
 				} else if s[i] == '/' {
-					// var path []string
-					// path = append(path, ident)
-					// i++
-					// for i < len(s) {
-					// 	ident := readIdent(s, &i)
-					// 	path = append(path, ident)
-					// 	if i >= len(s) || s[i] != '/' {
-					// 		break
-					// 	}
-					// 	i++
-					// }
-					// if kind == GetWordKind {
-					// 	result = append(result, &GetPathValue{Path: path})
-					// } else {
-					// 	panic("path not implemented")
-					// }
-					// break
-					panic("not implemented")
+					var path []string
+					path = append(path, ident)
+					i++
+					for i < len(s) {
+						ident := readIdent(s, &i)
+						path = append(path, ident)
+						if i >= len(s) || s[i] != '/' {
+							break
+						}
+						i++
+					}
+					if kind == GetWordKind {
+						result = append(result, &GetPathValue{Path: path})
+					} else {
+						panic("path not implemented")
+					}
+					break
 				}
 			}
 
 			switch kind {
-			case WordType:
-				result.add(vm, vm.alloc(cell(vm.makeWord(ident))))
-			case SetWordType:
-				result.add(vm, vm.alloc(cell(vm.makeSetWord(ident))))
+			case WordKind:
+				result = append(result, &Word{sym: ident})
+			case SetWordKind:
+				result = append(result, &SetWord{sym: ident})
 			default:
 				fmt.Printf("kind %v", kind)
 				panic("not implemented other words")

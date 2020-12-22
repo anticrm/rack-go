@@ -15,11 +15,34 @@
 
 package node
 
+import (
+	"log"
+	"net/http"
+)
+
 type Deployment struct {
 	Domain string
 }
 
 type Node struct {
+}
+
+type exposedFn struct{}
+
+func NewNode() *Node {
+	mux := http.NewServeMux()
+	mux.Handle("/", &exposedFn{})
+	mux.HandleFunc("/posts", func(rw http.ResponseWriter, req *http.Request) {
+		rw.Write([]byte("Visit http://bit.ly/just-enough-go to get started"))
+	})
+	server := http.Server{Addr: ":8080", Handler: mux}
+	log.Fatal(server.ListenAndServe())
+
+	return &Node{}
+}
+
+func (h *exposedFn) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
+	rw.Write([]byte("Welcome to the \"Just Enough Go\" blog series!!"))
 }
 
 func (node *Node) deploy(deployment *Deployment) {

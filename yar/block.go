@@ -13,7 +13,7 @@
 // limitations under the License.
 //
 
-package x
+package yar
 
 import "strings"
 
@@ -22,20 +22,20 @@ import "strings"
 //   FIRST  | LAST | KIND |
 //-------------------------
 
-type block obj
+type Block obj
 type pBlock ptr
 type blockEntry item
 type pBlockEntry ptr
 
-func (b block) first() pBlockEntry { return pBlockEntry(obj(b).val()) }
-func (b block) last() pBlockEntry  { return pBlockEntry(obj(b).ptr()) }
+func (b Block) First() pBlockEntry { return pBlockEntry(obj(b).val()) }
+func (b Block) last() pBlockEntry  { return pBlockEntry(obj(b).ptr()) }
 
 func (b blockEntry) next() pBlockEntry { return pBlockEntry(item(b).ptr()) }
 func (b blockEntry) pval() ptr         { return ptr(item(b).val()) }
 
-func (b pBlockEntry) next(vm *VM) pBlockEntry { return blockEntry(vm.read(ptr(b))).next() }
+func (b pBlockEntry) Next(vm *VM) pBlockEntry { return blockEntry(vm.read(ptr(b))).next() }
 func (b pBlockEntry) pval(vm *VM) ptr         { return blockEntry(vm.read(ptr(b))).pval() }
-func (b pBlockEntry) value(vm *VM) value      { return value(vm.read(b.pval(vm))) }
+func (b pBlockEntry) Value(vm *VM) Value      { return Value(vm.read(b.pval(vm))) }
 
 // func (b pBlockEntry) ptr(vm *VM) (ptr, bool) {
 // 	ptrval := ptrval(vm.read(ptr(b)))
@@ -45,7 +45,7 @@ func (b pBlockEntry) value(vm *VM) value      { return value(vm.read(b.pval(vm))
 // 	return ptrval.ptr(), true
 // }
 
-func makeBlock(first pBlockEntry, last pBlockEntry) value {
+func makeBlock(first pBlockEntry, last pBlockEntry) Value {
 	return makeObj(int(first), ptr(last), BlockType)
 }
 
@@ -54,15 +54,15 @@ func (vm *VM) allocBlock() pBlock {
 }
 
 func (b pBlock) first(vm *VM) pBlockEntry {
-	return block(vm.read(ptr(b))).first()
+	return Block(vm.read(ptr(b))).First()
 }
 
 func (b pBlock) addEntry(vm *VM, newLast pBlockEntry) {
-	block := block(vm.read(ptr(b)))
+	block := Block(vm.read(ptr(b)))
 	last := block.last()
 	if last != 0 {
 		pItem(last).setPtr(vm, ptr(newLast))
-		vm.write(ptr(b), cell(makeBlock(block.first(), newLast)))
+		vm.write(ptr(b), cell(makeBlock(block.First(), newLast)))
 	} else {
 		vm.write(ptr(b), cell(makeBlock(newLast, newLast)))
 	}
@@ -76,13 +76,13 @@ func (b pBlock) add(vm *VM, ptr ptr) {
 	b.addEntry(vm, pBlockEntry(vm.alloc(cell(makeItem(int(ptr), 0)))))
 }
 
-func blockToString(vm *VM, b value) string {
+func blockToString(vm *VM, b Value) string {
 	var result strings.Builder
 	result.WriteByte('[')
 
-	block := block(b)
-	for i := block.first(); i != 0; i = i.next(vm) {
-		value := i.value(vm)
+	block := Block(b)
+	for i := block.First(); i != 0; i = i.Next(vm) {
+		value := i.Value(vm)
 		result.WriteString(vm.toString(value))
 		result.WriteByte(' ')
 	}

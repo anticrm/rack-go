@@ -15,213 +15,237 @@
 
 package yar
 
-const (
-	IntKind     = iota
-	BoolKind    = iota
-	WordKind    = iota
-	GetWordKind = iota
-	SetWordKind = iota
-	Quote       = iota
-	ProcKind    = iota
-	NativeKind  = iota
-	BlockKind   = iota
-	MapKind     = iota
-	PathKind    = iota
-	GetPathKind = iota
+import (
+	"fmt"
 )
 
-type bound interface {
-	get(sym string) Value
-	set(sym string, value Value)
+const (
+	MapBinding   = iota
+	StackBinding = iota
+	LastBinding  = iota
+)
+
+func makeMapBinding(value ptr) imm {
+	return makeImm(int(value), MapBinding)
 }
 
-type bindFactory func(sym string) bound
-
-type Value interface {
-	Kind() int
-	bind(factory bindFactory)
-	exec(pc *PC) Value
+func makeStackBinding(value int) imm {
+	return makeImm(value, StackBinding)
 }
 
-type Code []Value
-
-func bind(code Code, factory bindFactory) {
-	for _, item := range code {
-		item.bind(factory)
-	}
-}
-
-// W O R D S
-
-type Word struct {
-	bound bound
-	sym   string
-}
-
-func (w *Word) Kind() int { return WordKind }
-
-func (w *Word) bind(factory bindFactory) {
-	bound := factory(w.sym)
-	if bound != nil {
-		w.bound = bound
-	}
-}
-
-func (w *Word) exec(pc *PC) Value {
-	if w.bound == nil {
-		panic("word not bound")
-	}
-	value := w.bound.get(w.sym)
-	if value == nil {
-		panic("nothing when read")
-	}
-	return value.exec(pc)
-}
-
-type SetWord struct {
-	bound bound
-	sym   string
-}
-
-func (w *SetWord) Kind() int { return SetWordKind }
-
-func (w *SetWord) bind(factory bindFactory) {
-	bound := factory(w.sym)
-	if bound != nil {
-		w.bound = bound
-	}
-}
-
-func (w *SetWord) exec(pc *PC) Value {
-	if w.bound == nil {
-		panic("word not bound")
-	}
-	result := pc.next()
-	w.bound.set(w.sym, result)
-	return result
-}
-
-// T Y P E S
-
-type IntValue struct {
-	Value int
-}
-
-func (i *IntValue) Kind() int                { return IntKind }
-func (i *IntValue) bind(factory bindFactory) {}
-func (i *IntValue) exec(pc *PC) Value        { return i }
-
-type BoolValue struct {
-	Value bool
-}
-
-func (i *BoolValue) Kind() int                { return BoolKind }
-func (i *BoolValue) bind(factory bindFactory) {}
-func (i *BoolValue) exec(pc *PC) Value        { return i }
-
-type ProcValue struct {
-	Value func(*PC) Value
-}
-
-func (i *ProcValue) Kind() int                { return ProcKind }
-func (i *ProcValue) bind(factory bindFactory) {}
-func (i *ProcValue) exec(pc *PC) Value        { return i.Value(pc) }
-
-type NativeValue struct {
-	Value func(*PC, []Value) Value
-}
-
-func (i *NativeValue) Kind() int                { return NativeKind }
-func (i *NativeValue) bind(factory bindFactory) {}
-func (i *NativeValue) exec(pc *PC) Value        { return i }
-
-type BlockValue struct {
-	Value Code
-}
-
-func (i *BlockValue) Kind() int                { return BlockKind }
-func (i *BlockValue) bind(factory bindFactory) { bind(i.Value, factory) }
-func (i *BlockValue) exec(pc *PC) Value        { return i }
-
-type MapValue struct {
-	Value map[string]Value
-}
-
-func (i *MapValue) Kind() int                { return MapKind }
-func (i *MapValue) bind(factory bindFactory) {}
-func (i *MapValue) exec(pc *PC) Value        { return i }
-
-func (i *MapValue) get(sym string) Value        { return i.Value[sym] }
-func (i *MapValue) set(sym string, value Value) { i.Value[sym] = value }
-
-type GetPathValue struct {
-	bound bound
-	Path  []string
-}
-
-func (i *GetPathValue) Kind() int { return GetPathKind }
-func (i *GetPathValue) bind(factory bindFactory) {
-	bound := factory(i.Path[0])
-	if bound != nil {
-		i.bound = bound
-	}
-}
-func (path *GetPathValue) exec(pc *PC) Value {
-	if path.bound == nil {
-		panic("path not bound")
-	}
-	val := path.bound.get(path.Path[0])
-	for i := 1; i < len(path.Path); i++ {
-		val = val.(bound).get(path.Path[i])
-	}
-	return val
-}
-
-// V M
+type sym = uint
+type procFunc func(pc *PC) Value
 
 type VM struct {
-	result Value
-	Dict   MapValue
-	stack  []Value
+	mem            []cell
+	stack          []cell
+	top            uint
+	sp             uint
+	result         Value
+	readOnly       bool
+	dictionary     pDict
+	proc           []procFunc
+	symbols        map[string]sym
+	nextSymbol     uint
+	InverseSymbols map[sym]string
+
+	toStringFunc [LastType]func(vm *VM, value Value) string
+	bindFunc     [LastType]func(vm *VM, ptr ptr, factory bindFactory)
+	execFunc     [LastType]func(pc *PC, value Value) Value
+	getBound     [LastBinding]func(bindings imm) Value
+	setBound     [LastBinding]func(bindings imm, value Value)
 }
 
-func (vm *VM) Exec(code Code) Value {
-	return newPC(vm, code).exec()
+func notImplemented(vm *VM, value Value) string {
+	return "<not implemented>"
 }
 
-func (vm *VM) Bind(code Code) {
-	bind(code, func(sym string) bound {
-		return &vm.Dict
+func NewVM(memSize int, stackSize int) *VM {
+	vm := &VM{
+		mem:            make([]cell, memSize),
+		top:            0,
+		stack:          make([]cell, stackSize),
+		sp:             0,
+		nextSymbol:     0,
+		symbols:        make(map[string]uint),
+		InverseSymbols: make(map[sym]string),
+	}
+
+	for i := 0; i < LastType; i++ {
+		vm.toStringFunc[i] = notImplemented
+	}
+	vm.toStringFunc[BlockType] = blockToString
+	vm.toStringFunc[WordType] = wordToString
+
+	vm.bindFunc[WordType] = wordBind
+	vm.bindFunc[SetWordType] = setWordBind
+	vm.bindFunc[BlockType] = func(vm *VM, ptr ptr, factory bindFactory) {
+		bind(vm, Block(vm.read(ptr)), factory)
+	}
+	vm.bindFunc[IntegerType] = func(vm *VM, ptr ptr, factory bindFactory) {}
+
+	vm.execFunc[WordType] = wordExec
+	vm.execFunc[SetWordType] = setWordExec
+	vm.execFunc[ProcType] = procExec
+	vm.execFunc[BlockType] = func(pc *PC, value Value) Value { return value }
+	vm.execFunc[IntegerType] = func(pc *PC, value Value) Value { return value }
+
+	vm.getBound[MapBinding] = func(binding imm) Value {
+		symValPtr := intValue(binding)
+		symVal := symval(vm.read(ptr(symValPtr)))
+		symValValPtr := symVal.val()
+		return Value(vm.read(symValValPtr))
+	}
+
+	vm.setBound[MapBinding] = func(binding imm, value Value) {
+		symValPtr := intValue(binding)
+		symVal := symval(vm.read(ptr(symValPtr)))
+		symValValPtr := symVal.val()
+		vm.write(symValValPtr, cell(value))
+	}
+
+	vm.getBound[StackBinding] = func(binding imm) Value {
+		offset := intValue(binding)
+		return Value(vm.stack[int(vm.sp)+offset])
+	}
+
+	vm.dictionary = vm.allocDict()
+
+	return vm
+}
+
+func (vm *VM) Clone() *VM {
+	vm.readOnly = true
+	return vm
+}
+
+func (vm *VM) Fork(stack []cell, sp uint) *VM {
+	fork := *vm
+	fork.stack = stack
+	fork.sp = sp
+	return &fork
+}
+
+func (vm *VM) alloc(cell cell) ptr {
+	if vm.readOnly {
+		panic("alloc in read only mode")
+	}
+	vm.top++
+	vm.mem[vm.top] = cell
+	return ptr(vm.top)
+}
+
+func (vm *VM) read(ptr ptr) cell { return vm.mem[ptr] }
+func (vm *VM) write(ptr ptr, cell cell) {
+	if vm.readOnly {
+		panic("write in read only mode")
+	}
+	vm.mem[ptr] = cell
+}
+
+func (vm *VM) push(value cell) {
+	vm.stack[vm.sp] = value
+	vm.sp++
+}
+
+func (vm *VM) pop() cell {
+	vm.sp--
+	return vm.stack[vm.sp]
+}
+
+func (vm *VM) dump() {
+	for i := 0; i <= int(vm.top); i++ {
+		fmt.Printf("%016x\n", vm.mem[i])
+	}
+}
+
+func (vm *VM) getSymbolID(sym string) uint {
+	id, ok := vm.symbols[sym]
+	if !ok {
+		vm.nextSymbol++
+		id = vm.nextSymbol
+		vm.symbols[sym] = id
+		vm.InverseSymbols[id] = sym
+	}
+	return id
+}
+
+func (vm *VM) addProc(f procFunc) Value {
+	id := len(vm.proc)
+	vm.proc = append(vm.proc, f)
+	return makeProc(id)
+}
+
+func (vm *VM) toString(value Value) string {
+	kind := value.Kind()
+	return vm.toStringFunc[kind](vm, value)
+}
+
+// B I N D I N G S
+
+func bind(vm *VM, block Block, factory bindFactory) {
+	for i := block.First(); i != 0; i = i.Next(vm) {
+		ptr := i.pval(vm)
+		obj := Value(vm.read(ptr))
+		kind := obj.Kind()
+		vm.bindFunc[kind](vm, ptr, factory)
+	}
+}
+
+func (vm *VM) bind(block Block) {
+	bind(vm, block, func(sym sym, create bool) bound {
+		symValPtr := vm.dictionary.find(vm, sym)
+		if symValPtr == 0 {
+			if create {
+				// fmt.Printf("putting symbol %d - %s\n", sym, vm.inverseSymbols[sym])
+				vm.dictionary.put(vm, sym, 0)
+				symValPtr = vm.dictionary.find(vm, sym) // TODO: fix this garbage
+				// fmt.Printf("found %16x\n", symValPtr)
+			} else {
+				// fmt.Printf("binding not found %d - %s\n", sym, vm.inverseSymbols[sym])
+				// panic("can't find binding")
+				return 0
+			}
+		}
+		return makeMapBinding(ptr(symValPtr))
 	})
 }
 
-type PC struct {
-	code Code
-	pc   int
-	vm   *VM
+func (vm *VM) exec(block Block) Value {
+	return newPC(vm, block).exec()
 }
 
-func newPC(vm *VM, code Code) *PC {
-	return &PC{code: code, vm: vm, pc: 0}
+// P C
+
+type PC struct {
+	pc pBlockEntry
+	VM *VM
+}
+
+func newPC(vm *VM, block Block) *PC {
+	first := block.First()
+	return &PC{VM: vm, pc: first}
 }
 
 func (pc *PC) nextNoInfix() Value {
-	item := pc.code[pc.pc]
-	pc.pc++
-	result := item.exec(pc)
-	pc.vm.result = result
+	vm := pc.VM
+	entry := blockEntry(vm.read(ptr(pc.pc)))
+	value := Value(vm.read(entry.pval()))
+	pc.pc = entry.next()
+	kind := value.Kind()
+	result := vm.execFunc[kind](pc, value)
+	vm.result = result
 	return result
 }
 
-func (pc *PC) next() Value {
-	result := pc.nextNoInfix()
-	return result
+func (pc *PC) Next() Value {
+	return pc.nextNoInfix()
 }
 
 func (pc *PC) exec() Value {
 	var result Value
-	for pc.pc < len(pc.code) {
-		result = pc.next()
+	for pc.pc != 0 {
+		result = pc.Next()
 	}
 	return result
 }

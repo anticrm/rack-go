@@ -15,100 +15,67 @@
 
 package yar
 
-import (
-	"testing"
-)
+import "testing"
 
-func TestParse1(t *testing.T) {
-	x := Parse("add 1 2")
-	if (*x[1].(*IntValue) != IntValue{Value: 1}) {
-		t.Errorf("x[1] != 1")
-	}
-}
-
-func TestNative1(t *testing.T) {
-	vm := CreateVM()
-	vm.Dict.Value["add"] = &NativeValue{Value: func(pc *PC, values []Value) Value {
-		return &IntValue{Value: values[0].(*IntValue).Value + values[1].(*IntValue).Value}
-	}}
-	code := Parse("native [x y] add")
-	vm.Bind(code)
-	x := vm.Exec(code)
-	params := Parse("1 2")
-	pc := newPC(vm, params)
-	result := x.(*ProcValue).Value(pc)
-
-	if result.(*IntValue).Value != 3 {
-		t.Error("result != 3")
-	}
-}
-
-func TestGetPath(t *testing.T) {
-	vm := CreateVM()
-	m := make(map[string]Value)
-	m["y"] = &IntValue{Value: 42}
-	vm.Dict.Value["x"] = &MapValue{Value: m}
-	code := Parse(":x/y")
-	vm.Bind(code)
-	x := vm.Exec(code)
-
-	if x.(*IntValue).Value != 42 {
-		t.Error("result != 42")
-	}
+func TestBind(t *testing.T) {
+	vm := NewVM(1000, 100)
+	vm.dictionary.put(vm, vm.getSymbolID("native"), vm.alloc(cell(vm.addProc(func(pc *PC) Value { return 42 }))))
+	code := vm.Parse("native [x y]")
+	t.Logf("%s", vm.toString(Value(vm.read(ptr(code)))))
+	vm.dump()
+	vm.bind(Block(vm.read(ptr(code))))
+	t.Log("after bindings")
+	t.Logf("%s", vm.toString(Value(vm.read(ptr(code)))))
+	vm.dump()
 }
 
 func TestAdd(t *testing.T) {
-	vm := CreateVM()
-	LoadCore(vm)
-	code := Parse("add 1 2")
-	vm.Bind(code)
-	x := vm.Exec(code)
-	if x.(*IntValue).Value != 3 {
-		t.Error("result != 3")
-	}
+	vm := NewVM(1000, 100)
+	BootVM(vm)
+	code := vm.Parse("add 1 2")
+	c := Block(vm.read(ptr(code)))
+	vm.bind(c)
+	result := vm.exec(c)
+	t.Logf("result: %016x", result)
 }
 
 func TestAddAdd(t *testing.T) {
-	vm := CreateVM()
-	LoadCore(vm)
-	code := Parse("add add 1 2 3")
-	vm.Bind(code)
-	x := vm.Exec(code)
-	if x.(*IntValue).Value != 6 {
-		t.Error("result != 6")
-	}
+	vm := NewVM(1000, 100)
+	BootVM(vm)
+	code := vm.Parse("add add 1 2 3")
+	c := Block(vm.read(ptr(code)))
+	vm.bind(c)
+	result := vm.exec(c)
+	t.Logf("result: %016x", result)
 }
 
 func TestFn(t *testing.T) {
-	vm := CreateVM()
-	LoadCore(vm)
-	code := Parse("x: fn [n] [add n 10] x 5")
-	vm.Bind(code)
-	x := vm.Exec(code)
-	if x.(*IntValue).Value != 15 {
-		t.Errorf("result != 15, %v", x.(*IntValue).Value)
-	}
+	vm := NewVM(1000, 100)
+	BootVM(vm)
+	code := vm.Parse("x: fn [n] [add n 10] x 5")
+	c := Block(vm.read(ptr(code)))
+	vm.bind(c)
+	t.Logf("%s", vm.toString(Value(c)))
+	result := vm.exec(c)
+	t.Logf("result: %016x", result)
 }
 
 func TestSum(t *testing.T) {
-	vm := CreateVM()
-	LoadCore(vm)
-	code := Parse("sum: fn [n] [either gt n 1 [add n sum sub n 1] [n]] sum 100")
-	vm.Bind(code)
-	x := vm.Exec(code)
-	if x.(*IntValue).Value != 5050 {
-		t.Errorf("result != 5050, %v", x.(*IntValue).Value)
-	}
+	vm := NewVM(1000, 100)
+	BootVM(vm)
+	code := vm.Parse("sum: fn [n] [either gt n 1 [add n sum sub n 1] [n]] sum 100")
+	c := Block(vm.read(ptr(code)))
+	vm.bind(c)
+	t.Logf("%s", vm.toString(Value(c)))
+	result := vm.exec(c)
+	t.Logf("result: %016x", result)
 }
 
 func BenchmarkFib(t *testing.B) {
-	vm := CreateVM()
-	LoadCore(vm)
-	code := Parse("fib: fn [n] [either gt n 1 [add fib sub n 2 fib sub n 1] [n]] fib 40")
-	vm.Bind(code)
-	x := vm.Exec(code)
-	t.Logf("fib %d", x.(*IntValue).Value)
-	// if x.(*IntValue).Value != 5050 {
-	// 	t.Errorf("result != 5050, %v", x.(*IntValue).Value)
-	// }
+	vm := NewVM(1000, 100)
+	BootVM(vm)
+	code := vm.Parse("fib: fn [n] [either gt n 1 [add fib sub n 2 fib sub n 1] [n]] fib 40")
+	c := Block(vm.read(ptr(code)))
+	vm.bind(c)
+	vm.exec(c)
 }
