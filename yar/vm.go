@@ -34,13 +34,16 @@ func makeStackBinding(value int) imm {
 }
 
 type sym = uint
-type procFunc func(pc *PC) Value
+type procFunc func(vm *VM) Value
 
 type VM struct {
+	pc             pBlockEntry
 	mem            []cell
 	stack          []cell
+	callStack      []pBlockEntry
 	top            uint
 	sp             uint
+	cs             uint
 	result         Value
 	readOnly       bool
 	dictionary     pDict
@@ -51,7 +54,7 @@ type VM struct {
 
 	toStringFunc [LastType]func(vm *VM, value Value) string
 	bindFunc     [LastType]func(vm *VM, ptr ptr, factory bindFactory)
-	execFunc     [LastType]func(pc *PC, value Value) Value
+	execFunc     [LastType]func(vm *VM, value Value) Value
 	getBound     [LastBinding]func(bindings imm) Value
 	setBound     [LastBinding]func(bindings imm, value Value)
 }
@@ -87,8 +90,8 @@ func NewVM(memSize int, stackSize int) *VM {
 	vm.execFunc[WordType] = wordExec
 	vm.execFunc[SetWordType] = setWordExec
 	vm.execFunc[ProcType] = procExec
-	vm.execFunc[BlockType] = func(pc *PC, value Value) Value { return value }
-	vm.execFunc[IntegerType] = func(pc *PC, value Value) Value { return value }
+	vm.execFunc[BlockType] = func(vm *VM, value Value) Value { return value }
+	vm.execFunc[IntegerType] = func(vm *VM, value Value) Value { return value }
 
 	vm.getBound[MapBinding] = func(binding imm) Value {
 		symValPtr := intValue(binding)
@@ -211,41 +214,27 @@ func (vm *VM) bind(block Block) {
 	})
 }
 
-func (vm *VM) exec(block Block) Value {
-	return newPC(vm, block).exec()
+func (vm *VM) call(block Block) Value {
+	pc := vm.pc
+	vm.pc = block.First()
+	var result Value
+	for vm.pc != 0 {
+		result = vm.Next()
+	}
+	vm.pc = pc
+	return result
 }
 
-// P C
-
-type PC struct {
-	pc pBlockEntry
-	VM *VM
-}
-
-func newPC(vm *VM, block Block) *PC {
-	first := block.First()
-	return &PC{VM: vm, pc: first}
-}
-
-func (pc *PC) nextNoInfix() Value {
-	vm := pc.VM
-	entry := blockEntry(vm.read(ptr(pc.pc)))
+func (vm *VM) nextNoInfix() Value {
+	entry := blockEntry(vm.read(ptr(vm.pc)))
 	value := Value(vm.read(entry.pval()))
-	pc.pc = entry.next()
+	vm.pc = entry.next()
 	kind := value.Kind()
-	result := vm.execFunc[kind](pc, value)
+	result := vm.execFunc[kind](vm, value)
 	vm.result = result
 	return result
 }
 
-func (pc *PC) Next() Value {
-	return pc.nextNoInfix()
-}
-
-func (pc *PC) exec() Value {
-	var result Value
-	for pc.pc != 0 {
-		result = pc.Next()
-	}
-	return result
+func (vm *VM) Next() Value {
+	return vm.nextNoInfix()
 }

@@ -64,8 +64,7 @@ func setWordBind(vm *VM, ptr ptr, factory bindFactory) {
 	vm.write(ptr, cell(_makeWord(sym, vm.alloc(cell(bindings)), SetWordType)))
 }
 
-func wordExec(pc *PC, val Value) Value {
-	vm := pc.VM
+func wordExec(vm *VM, val Value) Value {
 	w := val
 	bindings := Value(vm.read(w.bindings()))
 	if bindings == 0 {
@@ -74,18 +73,18 @@ func wordExec(pc *PC, val Value) Value {
 	}
 	bindingKind := bindings.Kind()
 	bound := vm.getBound[bindingKind](bindings)
-	return vm.execFunc[bound.Kind()](pc, bound)
+	return vm.execFunc[bound.Kind()](vm, bound)
 }
 
-func setWordExec(pc *PC, val Value) Value {
+func setWordExec(vm *VM, val Value) Value {
 	w := Word(val)
-	bindings := Value(pc.VM.read(w.bindings()))
+	bindings := Value(vm.read(w.bindings()))
 	if bindings == 0 {
 		panic("word not bound")
 	}
-	result := pc.Next()
+	result := vm.Next()
 	bindingKind := bindings.Kind()
-	pc.VM.setBound[bindingKind](bindings, result)
+	vm.setBound[bindingKind](bindings, result)
 	return result
 }
 

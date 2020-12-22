@@ -117,8 +117,8 @@ func makeProc(value int) imm {
 	return makeImm(value, ProcType)
 }
 
-func procExec(pc *PC, value Value) Value {
+func procExec(vm *VM, value Value) Value {
 	i := intValue(value)
-	f := pc.VM.proc[i]
-	return f(pc)
+	f := vm.proc[i]
+	return f(vm)
 }

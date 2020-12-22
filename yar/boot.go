@@ -15,21 +15,21 @@
 
 package yar
 
-func add(pc *PC) Value {
-	x := intValue(pc.Next())
-	y := intValue(pc.Next())
+func add(vm *VM) Value {
+	x := intValue(vm.Next())
+	y := intValue(vm.Next())
 	return makeInt(x + y)
 }
 
-func sub(pc *PC) Value {
-	x := intValue(pc.Next())
-	y := intValue(pc.Next())
+func sub(vm *VM) Value {
+	x := intValue(vm.Next())
+	y := intValue(vm.Next())
 	return makeInt(x - y)
 }
 
-func gt(pc *PC) Value {
-	x := intValue(pc.Next())
-	y := intValue(pc.Next())
+func gt(vm *VM) Value {
+	x := intValue(vm.Next())
+	y := intValue(vm.Next())
 	return makeBool(x > y)
 }
 
@@ -46,14 +46,14 @@ func blockOfRefinements(vm *VM, code Block) []sym {
 
 // type pcAlias = pc
 
-func fn(pc *PC) Value {
-	params := Block(pc.Next())
-	code := Block(pc.Next())
+func fn(vm *VM) Value {
+	params := Block(vm.Next())
+	code := Block(vm.Next())
 
-	defaults := blockOfRefinements(pc.VM, params)
+	defaults := blockOfRefinements(vm, params)
 	stackSize := len(defaults)
 
-	bind(pc.VM, code, func(sym sym, create bool) bound {
+	bind(vm, code, func(sym sym, create bool) bound {
 		for i, def := range defaults {
 			if def == sym {
 				return makeStackBinding(i - stackSize)
@@ -62,28 +62,28 @@ func fn(pc *PC) Value {
 		return 0
 	})
 
-	yfunc := func(pc *PC) Value {
+	yfunc := func(vm *VM) Value {
 		for i := 0; i < stackSize; i++ {
-			pc.VM.push(cell(pc.Next()))
+			vm.push(cell(vm.Next()))
 		}
-		result := pc.VM.exec(code)
-		pc.VM.sp -= uint(stackSize)
+		result := vm.call(code)
+		vm.sp -= uint(stackSize)
 		return result
 	}
 
-	return pc.VM.addProc(yfunc)
+	return vm.addProc(yfunc)
 }
 
-func either(pc *PC) Value {
-	cond := pc.Next()
-	ifTrue := Block(pc.Next())
-	ifFalse := Block(pc.Next())
+func either(vm *VM) Value {
+	cond := vm.Next()
+	ifTrue := Block(vm.Next())
+	ifFalse := Block(vm.Next())
 
 	if boolValue(cond) {
-		return pc.VM.exec(ifTrue)
+		return vm.call(ifTrue)
 	}
 
-	return pc.VM.exec(ifFalse)
+	return vm.call(ifFalse)
 }
 
 func BootVM(vm *VM) {

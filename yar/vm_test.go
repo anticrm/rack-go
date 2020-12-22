@@ -19,7 +19,7 @@ import "testing"
 
 func TestBind(t *testing.T) {
 	vm := NewVM(1000, 100)
-	vm.dictionary.put(vm, vm.getSymbolID("native"), vm.alloc(cell(vm.addProc(func(pc *PC) Value { return 42 }))))
+	vm.dictionary.put(vm, vm.getSymbolID("native"), vm.alloc(cell(vm.addProc(func(vm *VM) Value { return 42 }))))
 	code := vm.Parse("native [x y]")
 	t.Logf("%s", vm.toString(Value(vm.read(ptr(code)))))
 	vm.dump()
@@ -35,7 +35,7 @@ func TestAdd(t *testing.T) {
 	code := vm.Parse("add 1 2")
 	c := Block(vm.read(ptr(code)))
 	vm.bind(c)
-	result := vm.exec(c)
+	result := vm.call(c)
 	t.Logf("result: %016x", result)
 }
 
@@ -45,7 +45,7 @@ func TestAddAdd(t *testing.T) {
 	code := vm.Parse("add add 1 2 3")
 	c := Block(vm.read(ptr(code)))
 	vm.bind(c)
-	result := vm.exec(c)
+	result := vm.call(c)
 	t.Logf("result: %016x", result)
 }
 
@@ -56,7 +56,7 @@ func TestFn(t *testing.T) {
 	c := Block(vm.read(ptr(code)))
 	vm.bind(c)
 	t.Logf("%s", vm.toString(Value(c)))
-	result := vm.exec(c)
+	result := vm.call(c)
 	t.Logf("result: %016x", result)
 }
 
@@ -67,7 +67,7 @@ func TestSum(t *testing.T) {
 	c := Block(vm.read(ptr(code)))
 	vm.bind(c)
 	t.Logf("%s", vm.toString(Value(c)))
-	result := vm.exec(c)
+	result := vm.call(c)
 	t.Logf("result: %016x", result)
 }
 
@@ -77,5 +77,5 @@ func BenchmarkFib(t *testing.B) {
 	code := vm.Parse("fib: fn [n] [either gt n 1 [add fib sub n 2 fib sub n 1] [n]] fib 40")
 	c := Block(vm.read(ptr(code)))
 	vm.bind(c)
-	vm.exec(c)
+	vm.call(c)
 }
