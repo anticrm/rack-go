@@ -35,8 +35,8 @@ func expose(vm *yar.VM) yar.Value {
 			word := yar.Word(value)
 			symbol := vm.InverseSymbols[word.Sym()]
 			extractor := func(r *http.Request) yar.Value {
-				val := r.URL.Query()[symbol]
-				return yar.Value(len(val))
+				val := r.URL.Query().Get(symbol)
+				return yar.MakeInt(len(val))
 			}
 			extractors = append(extractors, extractor)
 		default:
@@ -56,7 +56,7 @@ func expose(vm *yar.VM) yar.Value {
 		}
 		fork := clone.Fork(stack, uint(stackSize))
 		value := fork.Exec(fn.First())
-		fmt.Fprintf(w, "Hello, %016xx", value)
+		fmt.Fprintf(w, "Hello, %016x", value)
 	}
 	service := vm.Services["http"].(*HttpService)
 	service.mux.HandleFunc("/test", handler)

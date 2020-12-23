@@ -270,3 +270,11 @@ func (vm *VM) Next() Value {
 func (vm *VM) AddNative(name string, f procFunc) {
 	vm.dictionary.put(vm, vm.getSymbolID(name), vm.alloc(cell(vm.addNative(f))))
 }
+
+func (vm *VM) Push(value Value) {
+	vm.push(value)
+}
+
+func (vm *VM) Show() {
+	fmt.Printf("Stack pointer: %d\n", vm.sp)
+}

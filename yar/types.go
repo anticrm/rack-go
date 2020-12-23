@@ -99,6 +99,10 @@ func makeInt(value int) imm {
 	return makeImm(value, IntegerType)
 }
 
+func MakeInt(value int) imm {
+	return makeInt(value)
+}
+
 func makeBool(value bool) imm {
 	if value {
 		return makeImm(1, BooleanType)
