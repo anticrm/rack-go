@@ -62,16 +62,7 @@ func fn(vm *VM) Value {
 		return 0
 	})
 
-	yfunc := func(vm *VM) Value {
-		for i := 0; i < stackSize; i++ {
-			vm.push(cell(vm.Next()))
-		}
-		result := vm.call(code)
-		vm.sp -= uint(stackSize)
-		return result
-	}
-
-	return vm.addProc(yfunc)
+	return makeProc(stackSize, ptr(code.First()))
 }
 
 func either(vm *VM) Value {
@@ -87,12 +78,12 @@ func either(vm *VM) Value {
 }
 
 func BootVM(vm *VM) {
-	vm.dictionary.put(vm, vm.getSymbolID("add"), vm.alloc(cell(vm.addProc(add))))
-	vm.dictionary.put(vm, vm.getSymbolID("sub"), vm.alloc(cell(vm.addProc(sub))))
+	vm.dictionary.put(vm, vm.getSymbolID("add"), vm.alloc(cell(vm.addNative(add))))
+	vm.dictionary.put(vm, vm.getSymbolID("sub"), vm.alloc(cell(vm.addNative(sub))))
 
-	vm.dictionary.put(vm, vm.getSymbolID("gt"), vm.alloc(cell(vm.addProc(gt))))
+	vm.dictionary.put(vm, vm.getSymbolID("gt"), vm.alloc(cell(vm.addNative(gt))))
 
-	vm.dictionary.put(vm, vm.getSymbolID("either"), vm.alloc(cell(vm.addProc(either))))
+	vm.dictionary.put(vm, vm.getSymbolID("either"), vm.alloc(cell(vm.addNative(either))))
 
-	vm.dictionary.put(vm, vm.getSymbolID("fn"), vm.alloc(cell(vm.addProc(fn))))
+	vm.dictionary.put(vm, vm.getSymbolID("fn"), vm.alloc(cell(vm.addNative(fn))))
 }

@@ -46,7 +46,7 @@ func (b pBlockEntry) Value(vm *VM) Value      { return Value(vm.read(b.pval(vm))
 // }
 
 func makeBlock(first pBlockEntry, last pBlockEntry) Value {
-	return makeObj(int(first), ptr(last), BlockType)
+	return Value(makeObj(int(first), ptr(last), BlockType))
 }
 
 func (vm *VM) allocBlock() pBlock {

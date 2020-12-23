@@ -39,11 +39,9 @@ type procFunc func(vm *VM) Value
 type VM struct {
 	pc             pBlockEntry
 	mem            []cell
-	stack          []cell
-	callStack      []pBlockEntry
+	stack          []Value
 	top            uint
 	sp             uint
-	cs             uint
 	result         Value
 	readOnly       bool
 	dictionary     pDict
@@ -67,7 +65,7 @@ func NewVM(memSize int, stackSize int) *VM {
 	vm := &VM{
 		mem:            make([]cell, memSize),
 		top:            0,
-		stack:          make([]cell, stackSize),
+		stack:          make([]Value, stackSize),
 		sp:             0,
 		nextSymbol:     0,
 		symbols:        make(map[string]uint),
@@ -89,6 +87,7 @@ func NewVM(memSize int, stackSize int) *VM {
 
 	vm.execFunc[WordType] = wordExec
 	vm.execFunc[SetWordType] = setWordExec
+	vm.execFunc[NativeType] = nativeExec
 	vm.execFunc[ProcType] = procExec
 	vm.execFunc[BlockType] = func(vm *VM, value Value) Value { return value }
 	vm.execFunc[IntegerType] = func(vm *VM, value Value) Value { return value }
@@ -122,7 +121,7 @@ func (vm *VM) Clone() *VM {
 	return vm
 }
 
-func (vm *VM) Fork(stack []cell, sp uint) *VM {
+func (vm *VM) Fork(stack []Value, sp uint) *VM {
 	fork := *vm
 	fork.stack = stack
 	fork.sp = sp
@@ -146,12 +145,12 @@ func (vm *VM) write(ptr ptr, cell cell) {
 	vm.mem[ptr] = cell
 }
 
-func (vm *VM) push(value cell) {
+func (vm *VM) push(value Value) {
 	vm.stack[vm.sp] = value
 	vm.sp++
 }
 
-func (vm *VM) pop() cell {
+func (vm *VM) pop() Value {
 	vm.sp--
 	return vm.stack[vm.sp]
 }
@@ -173,10 +172,10 @@ func (vm *VM) getSymbolID(sym string) uint {
 	return id
 }
 
-func (vm *VM) addProc(f procFunc) Value {
+func (vm *VM) addNative(f procFunc) Value {
 	id := len(vm.proc)
 	vm.proc = append(vm.proc, f)
-	return makeProc(id)
+	return makeNative(id)
 }
 
 func (vm *VM) toString(value Value) string {
@@ -217,6 +216,17 @@ func (vm *VM) bind(block Block) {
 func (vm *VM) call(block Block) Value {
 	pc := vm.pc
 	vm.pc = block.First()
+	var result Value
+	for vm.pc != 0 {
+		result = vm.Next()
+	}
+	vm.pc = pc
+	return result
+}
+
+func (vm *VM) Exec(first pBlockEntry) Value {
+	pc := vm.pc
+	vm.pc = first
 	var result Value
 	for vm.pc != 0 {
 		result = vm.Next()

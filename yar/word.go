@@ -65,7 +65,7 @@ func setWordBind(vm *VM, ptr ptr, factory bindFactory) {
 }
 
 func wordExec(vm *VM, val Value) Value {
-	w := val
+	w := Word(val)
 	bindings := Value(vm.read(w.bindings()))
 	if bindings == 0 {
 		fmt.Printf("word %s\n", vm.InverseSymbols[w.Sym()])

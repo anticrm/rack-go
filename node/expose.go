@@ -16,15 +16,15 @@
 package node
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/anticrm/rack/yar"
 )
 
-func expose(pc *yar.PC) yar.Value {
-	vm := pc.VM
-	fn := pc.Next()
-	params := yar.Block(pc.Next())
+func expose(vm *yar.VM) yar.Value {
+	fn := yar.Proc(vm.Next())
+	params := yar.Block(vm.Next())
 
 	var extractors []func(r *http.Request) yar.Value
 
@@ -39,13 +39,19 @@ func expose(pc *yar.PC) yar.Value {
 				return yar.Value(len(val))
 			}
 			extractors = append(extractors, extractor)
+			stackSize := len(extractors)
+			if stackSize != fn.StackSize() {
+				panic("stack mismatch")
+			}
 			clone := vm.Clone()
 			handler := func(w http.ResponseWriter, r *http.Request) {
 				stack := make([]yar.Value, 100)
 				for i, e := range extractors {
 					stack[i] = e(r)
 				}
-				fork := clone.Fork(stack, len(extractors))
+				fork := clone.Fork(stack, uint(stackSize))
+				value := fork.Exec(fn.First())
+				fmt.Fprintf(w, "Hello, %016xx", value)
 			}
 		default:
 			panic("unsupported kind")

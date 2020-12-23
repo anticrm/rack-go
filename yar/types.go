@@ -27,6 +27,7 @@ const (
 	MapType     = iota
 	IntegerType = iota
 	BooleanType = iota
+	NativeType  = iota
 	ProcType    = iota
 	LastType    = iota
 )
@@ -55,7 +56,7 @@ func (v Value) Kind() int { return int(v & 0xff) }
 //  VAL     | PTR  | KIND |
 //-------------------------
 
-type obj = Value
+type obj Value
 
 func (v obj) val() int { return int(v >> 32) }
 func (v obj) ptr() ptr { return ptr(v&0xffffffff) >> 8 }
@@ -74,8 +75,8 @@ type pItem ptr
 
 func makeItem(val int, ptr ptr) item { return item(val<<32) | item(ptr) }
 
-func (i item) ptr() ptr { return ptr(i & 0xffffffff) }
 func (i item) val() int { return int(i >> 32) }
+func (i item) ptr() ptr { return ptr(i & 0xffffffff) }
 
 func (e pItem) ptr(vm *VM) ptr { return item(vm.read(ptr(e))).ptr() }
 func (e pItem) val(vm *VM) int { return item(vm.read(ptr(e))).val() }
@@ -113,12 +114,35 @@ func boolValue(value imm) bool {
 	return intValue(value) != 0
 }
 
-func makeProc(value int) imm {
-	return makeImm(value, ProcType)
+func makeNative(value int) imm {
+	return makeImm(value, NativeType)
 }
 
-func procExec(vm *VM, value Value) Value {
+func nativeExec(vm *VM, value Value) Value {
 	i := intValue(value)
 	f := vm.proc[i]
 	return f(vm)
+}
+
+///
+
+type Proc obj
+
+func makeProc(stackSize int, code ptr) Value {
+	return Value(makeObj(stackSize, code, ProcType))
+}
+
+func (p Proc) StackSize() int     { return obj(p).val() }
+func (p Proc) First() pBlockEntry { return pBlockEntry(obj(p).ptr()) }
+
+func procExec(vm *VM, value Value) Value {
+	p := Proc(value)
+	stackSize := p.StackSize()
+	code := p.First()
+	for i := 0; i < stackSize; i++ {
+		vm.push(vm.Next())
+	}
+	result := vm.Exec(code)
+	vm.sp -= uint(stackSize)
+	return result
 }
