@@ -16,8 +16,9 @@
 package node
 
 import (
-	"log"
 	"net/http"
+
+	"github.com/anticrm/rack/yar"
 )
 
 type Deployment struct {
@@ -25,25 +26,38 @@ type Deployment struct {
 }
 
 type Node struct {
+	vm *yar.VM
 }
 
-type exposedFn struct{}
+type HttpService struct {
+	mux *http.ServeMux
+}
 
 func NewNode() *Node {
-	mux := http.NewServeMux()
-	mux.Handle("/", &exposedFn{})
-	mux.HandleFunc("/posts", func(rw http.ResponseWriter, req *http.Request) {
-		rw.Write([]byte("Visit http://bit.ly/just-enough-go to get started"))
-	})
-	server := http.Server{Addr: ":8080", Handler: mux}
-	log.Fatal(server.ListenAndServe())
 
-	return &Node{}
+	vm := yar.NewVM(1000, 100)
+	yar.BootVM(vm)
+	vm.AddNative("expose", expose)
+
+	service := &HttpService{mux: http.NewServeMux()}
+	vm.Services["http"] = service
+
+	code := vm.Parse("calc: fn [x y] [add x y] expose :calc [x y]")
+	vm.BindAndExec(code)
+
+	// mux.Handle("/", &exposedFn{})
+	// mux.HandleFunc("/posts", func(rw http.ResponseWriter, req *http.Request) {
+	// 	rw.Write([]byte("Visit http://bit.ly/just-enough-go to get started"))
+	// })
+	server := http.Server{Addr: ":8080", Handler: service.mux}
+	server.ListenAndServe()
+
+	return &Node{vm: vm}
 }
 
-func (h *exposedFn) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
-	rw.Write([]byte("Welcome to the \"Just Enough Go\" blog series!!"))
-}
+// func (h *exposedFn) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
+// 	rw.Write([]byte("Welcome to the \"Just Enough Go\" blog series!!"))
+// }
 
 func (node *Node) deploy(deployment *Deployment) {
 

@@ -49,6 +49,7 @@ type VM struct {
 	symbols        map[string]sym
 	nextSymbol     uint
 	InverseSymbols map[sym]string
+	Services       map[string]interface{}
 
 	toStringFunc [LastType]func(vm *VM, value Value) string
 	bindFunc     [LastType]func(vm *VM, ptr ptr, factory bindFactory)
@@ -70,6 +71,7 @@ func NewVM(memSize int, stackSize int) *VM {
 		nextSymbol:     0,
 		symbols:        make(map[string]uint),
 		InverseSymbols: make(map[sym]string),
+		Services:       make(map[string]interface{}),
 	}
 
 	for i := 0; i < LastType; i++ {
@@ -79,6 +81,7 @@ func NewVM(memSize int, stackSize int) *VM {
 	vm.toStringFunc[WordType] = wordToString
 
 	vm.bindFunc[WordType] = wordBind
+	vm.bindFunc[GetWordType] = wordBind
 	vm.bindFunc[SetWordType] = setWordBind
 	vm.bindFunc[BlockType] = func(vm *VM, ptr ptr, factory bindFactory) {
 		bind(vm, Block(vm.read(ptr)), factory)
@@ -86,12 +89,21 @@ func NewVM(memSize int, stackSize int) *VM {
 	vm.bindFunc[IntegerType] = func(vm *VM, ptr ptr, factory bindFactory) {}
 
 	vm.execFunc[WordType] = wordExec
+	vm.execFunc[GetWordType] = getWordExec
 	vm.execFunc[SetWordType] = setWordExec
 	vm.execFunc[NativeType] = nativeExec
 	vm.execFunc[ProcType] = procExec
 	vm.execFunc[BlockType] = func(vm *VM, value Value) Value { return value }
 	vm.execFunc[IntegerType] = func(vm *VM, value Value) Value { return value }
 
+	vm.dictionary = vm.allocDict()
+
+	vm.initBindings()
+
+	return vm
+}
+
+func (vm *VM) initBindings() {
 	vm.getBound[MapBinding] = func(binding imm) Value {
 		symValPtr := intValue(binding)
 		symVal := symval(vm.read(ptr(symValPtr)))
@@ -100,20 +112,16 @@ func NewVM(memSize int, stackSize int) *VM {
 	}
 
 	vm.setBound[MapBinding] = func(binding imm, value Value) {
-		symValPtr := intValue(binding)
-		symVal := symval(vm.read(ptr(symValPtr)))
-		symValValPtr := symVal.val()
-		vm.write(symValValPtr, cell(value))
+		symValPtr := ptr(intValue(binding))
+		symVal := symval(vm.read(symValPtr))
+		p := vm.alloc(cell(value))
+		vm.write(symValPtr, cell(makeSymval(symVal.sym(), p)))
 	}
 
 	vm.getBound[StackBinding] = func(binding imm) Value {
 		offset := intValue(binding)
 		return Value(vm.stack[int(vm.sp)+offset])
 	}
-
-	vm.dictionary = vm.allocDict()
-
-	return vm
 }
 
 func (vm *VM) Clone() *VM {
@@ -125,6 +133,7 @@ func (vm *VM) Fork(stack []Value, sp uint) *VM {
 	fork := *vm
 	fork.stack = stack
 	fork.sp = sp
+	fork.initBindings()
 	return &fork
 }
 
@@ -141,6 +150,9 @@ func (vm *VM) read(ptr ptr) cell { return vm.mem[ptr] }
 func (vm *VM) write(ptr ptr, cell cell) {
 	if vm.readOnly {
 		panic("write in read only mode")
+	}
+	if ptr == 0 {
+		panic("null pointer assignment")
 	}
 	vm.mem[ptr] = cell
 }
@@ -235,6 +247,12 @@ func (vm *VM) Exec(first pBlockEntry) Value {
 	return result
 }
 
+func (vm *VM) BindAndExec(code pBlock) Value {
+	block := Block(vm.read(ptr(code)))
+	vm.bind(block)
+	return vm.call(block)
+}
+
 func (vm *VM) nextNoInfix() Value {
 	entry := blockEntry(vm.read(ptr(vm.pc)))
 	value := Value(vm.read(entry.pval()))
@@ -247,4 +265,8 @@ func (vm *VM) nextNoInfix() Value {
 
 func (vm *VM) Next() Value {
 	return vm.nextNoInfix()
+}
+
+func (vm *VM) AddNative(name string, f procFunc) {
+	vm.dictionary.put(vm, vm.getSymbolID(name), vm.alloc(cell(vm.addNative(f))))
 }

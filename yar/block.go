@@ -53,9 +53,9 @@ func (vm *VM) allocBlock() pBlock {
 	return pBlock(vm.alloc(cell(makeBlock(0, 0))))
 }
 
-func (b pBlock) first(vm *VM) pBlockEntry {
-	return Block(vm.read(ptr(b))).First()
-}
+// func (b pBlock) first(vm *VM) pBlockEntry {
+// 	return Block(vm.read(ptr(b))).First()
+// }
 
 func (b pBlock) addEntry(vm *VM, newLast pBlockEntry) {
 	block := Block(vm.read(ptr(b)))

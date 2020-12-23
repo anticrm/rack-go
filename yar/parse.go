@@ -113,6 +113,8 @@ func (vm *VM) Parse(s string) pBlock {
 			switch kind {
 			case WordType:
 				result.add(vm, vm.alloc(cell(vm.makeWord(ident))))
+			case GetWordType:
+				result.add(vm, vm.alloc(cell(vm.makeGetWord(ident))))
 			case SetWordType:
 				result.add(vm, vm.alloc(cell(vm.makeSetWord(ident))))
 			default:

@@ -64,10 +64,30 @@ func TestSum(t *testing.T) {
 	vm := NewVM(1000, 100)
 	BootVM(vm)
 	code := vm.Parse("sum: fn [n] [either gt n 1 [add n sum sub n 1] [n]] sum 100")
-	c := Block(vm.read(ptr(code)))
-	vm.bind(c)
-	t.Logf("%s", vm.toString(Value(c)))
-	result := vm.call(c)
+	result := vm.BindAndExec(code)
+	t.Logf("result: %016x", result)
+}
+
+func TestGetWord(t *testing.T) {
+	vm := NewVM(1000, 100)
+	BootVM(vm)
+	code := vm.Parse("sum: fn [n] [add n n] :sum")
+	result := vm.BindAndExec(code)
+	t.Logf("result: %016x", result)
+}
+
+func TestFork(t *testing.T) {
+	vm := NewVM(1000, 100)
+	BootVM(vm)
+	vm.AddNative("fork", func(vm *VM) Value {
+		fn := Proc(vm.Next())
+		clone := vm.Clone()
+		stack := []Value{makeInt(42), makeInt(41)}
+		fork := clone.Fork(stack, uint(len(stack)))
+		return fork.Exec(fn.First())
+	})
+	code := vm.Parse("sum: fn [x y] [add x y] fork :sum")
+	result := vm.BindAndExec(code)
 	t.Logf("result: %016x", result)
 }
 

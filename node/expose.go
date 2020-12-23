@@ -39,22 +39,26 @@ func expose(vm *yar.VM) yar.Value {
 				return yar.Value(len(val))
 			}
 			extractors = append(extractors, extractor)
-			stackSize := len(extractors)
-			if stackSize != fn.StackSize() {
-				panic("stack mismatch")
-			}
-			clone := vm.Clone()
-			handler := func(w http.ResponseWriter, r *http.Request) {
-				stack := make([]yar.Value, 100)
-				for i, e := range extractors {
-					stack[i] = e(r)
-				}
-				fork := clone.Fork(stack, uint(stackSize))
-				value := fork.Exec(fn.First())
-				fmt.Fprintf(w, "Hello, %016xx", value)
-			}
 		default:
 			panic("unsupported kind")
 		}
 	}
+
+	stackSize := len(extractors)
+	if stackSize != fn.StackSize() {
+		panic("stack mismatch")
+	}
+	clone := vm.Clone()
+	handler := func(w http.ResponseWriter, r *http.Request) {
+		stack := make([]yar.Value, 100)
+		for i, e := range extractors {
+			stack[i] = e(r)
+		}
+		fork := clone.Fork(stack, uint(stackSize))
+		value := fork.Exec(fn.First())
+		fmt.Fprintf(w, "Hello, %016xx", value)
+	}
+	service := vm.Services["http"].(*HttpService)
+	service.mux.HandleFunc("/test", handler)
+	return 0
 }

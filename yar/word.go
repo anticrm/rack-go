@@ -40,6 +40,10 @@ func (vm *VM) makeWord(sym string) Word {
 	return _makeWord(vm.getSymbolID(sym), 0, WordType)
 }
 
+func (vm *VM) makeGetWord(sym string) Word {
+	return _makeWord(vm.getSymbolID(sym), 0, GetWordType)
+}
+
 func (vm *VM) makeSetWord(sym string) Word {
 	return _makeWord(vm.getSymbolID(sym), 0, SetWordType)
 }
@@ -52,35 +56,47 @@ func wordBind(vm *VM, ptr ptr, factory bindFactory) {
 	sym := w.Sym()
 	bindings := factory(sym, false)
 	if bindings != 0 {
-		vm.write(ptr, cell(_makeWord(sym, vm.alloc(cell(bindings)), WordType)))
+		vm.write(ptr, cell(_makeWord(sym, vm.alloc(cell(bindings)), Value(w).Kind())))
 	}
 }
 
 func setWordBind(vm *VM, ptr ptr, factory bindFactory) {
 	w := Word(vm.read(ptr))
 	sym := w.Sym()
-	// fmt.Printf("create bindings %s\n", vm.inverseSymbols[sym])
 	bindings := factory(sym, true)
 	vm.write(ptr, cell(_makeWord(sym, vm.alloc(cell(bindings)), SetWordType)))
 }
 
 func wordExec(vm *VM, val Value) Value {
+	// w := Word(val)
+	// bindings := Value(vm.read(w.bindings()))
+	// if bindings == 0 {
+	// 	panic("word not bound")
+	// }
+	// bindingKind := bindings.Kind()
+	// bound := vm.getBound[bindingKind](bindings)
+	// return vm.execFunc[bound.Kind()](vm, bound)
+	bound := getWordExec(vm, val)
+	return vm.execFunc[bound.Kind()](vm, bound)
+}
+
+func getWordExec(vm *VM, val Value) Value {
 	w := Word(val)
 	bindings := Value(vm.read(w.bindings()))
 	if bindings == 0 {
-		fmt.Printf("word %s\n", vm.InverseSymbols[w.Sym()])
-		panic("word not bound")
+		fmt.Printf("%016x, %d, %s\n", val, w.Sym(), vm.InverseSymbols[w.Sym()])
+		panic("getword not bound")
 	}
 	bindingKind := bindings.Kind()
 	bound := vm.getBound[bindingKind](bindings)
-	return vm.execFunc[bound.Kind()](vm, bound)
+	return bound
 }
 
 func setWordExec(vm *VM, val Value) Value {
 	w := Word(val)
 	bindings := Value(vm.read(w.bindings()))
 	if bindings == 0 {
-		panic("word not bound")
+		panic("setword not bound")
 	}
 	result := vm.Next()
 	bindingKind := bindings.Kind()

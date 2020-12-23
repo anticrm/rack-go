@@ -17,24 +17,12 @@ package main
 
 import (
 	"fmt"
-	"os"
 
-	"github.com/anticrm/rack/pkg/yarilo"
+	"github.com/anticrm/rack/node"
 )
 
 func main() {
-	input := os.Args[1]
+	fmt.Print("rack node (c) 2020 anticrm folks.\n")
 
-	vm := yarilo.CreateVM()
-	vm.Dict["add"] = yarilo.NativeFunc{F: func(pc *yarilo.PC, values []yarilo.Value) yarilo.Value {
-		return yarilo.Integer{Val: values[0].(yarilo.Integer).Val + values[1].(yarilo.Integer).Val}
-	}}
-	code := yarilo.Parse(input)
-	vm.Bind(code)
-	x := vm.Exec(code).(yarilo.Proc)
-	params := yarilo.Parse("1 2")
-	pc := yarilo.NewPC(vm, params)
-	result := x.F(pc)
-
-	fmt.Printf("%+v", result)
+	node.NewNode()
 }
