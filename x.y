@@ -12,3 +12,17 @@ deploy: fn [deploymentUrl buildId] [
 ]
 
 cluster/deploy [deploy join os/args/1 ".screenversaion.com" env/BUILD_ID]
+
+
+
+
+
+
+
+cluster/deploy "my first deployment" [
+  expose :calc "/calc" [/query x y]
+  expose :calc "/calc" [/query x y]
+
+  cluster/docker "scrn" "anticrm/scrn" 3000 [kind: worker]
+  proxy/load-balance "screenversation.com/" "scrn"
+]

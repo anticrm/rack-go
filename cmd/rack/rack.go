@@ -16,49 +16,33 @@
 package main
 
 import (
+	"flag"
 	"fmt"
-	"net"
-	"net/url"
-	"strconv"
+	"io/ioutil"
+	"log"
 
-	"github.com/anticrm/rack/docker"
-	"github.com/anticrm/rack/http"
+	"github.com/anticrm/rack/node"
+	"gopkg.in/yaml.v3"
 )
 
-func GetFreeAddr() (*net.TCPAddr, error) {
-	addr, err := net.ResolveTCPAddr("tcp", "localhost:0")
-	if err != nil {
-		return nil, err
-	}
-
-	l, err := net.ListenTCP("tcp", addr)
-	if err != nil {
-		return nil, err
-	}
-	defer l.Close()
-	return l.Addr().(*net.TCPAddr), nil
-}
-
 func main() {
-	fmt.Print("rack node (c) 2020 anticrm folks.\n")
+	fmt.Print("anticrm rack (c) copyright 2020, 2021 Anticrm Project Contributors. All rights reserved.\n")
+	configFile := flag.String("f", "rack.yml", "Config file")
+	nodeAddr := flag.String("addr", "", "This node address")
+	flag.Parse()
 
-	server := http.NewServer()
-
-	for i := 0; i < 4; i++ {
-		addr, err := GetFreeAddr()
-		if err != nil {
-			panic(err)
-		}
-		go docker.Run("anticrm/scrn:5", addr.Port)
-
-		url, err := url.Parse("http://localhost:" + strconv.Itoa(addr.Port))
-		if err != nil {
-			panic(err)
-		}
-
-		local := http.NewBackend(url)
-		server.AddBackend(local)
+	yamlFile, err := ioutil.ReadFile(*configFile)
+	if err != nil {
+		log.Fatalf("Can't read config file #%v ", err)
 	}
 
-	server.Start()
+	conf := &node.ClusterConfig{}
+
+	err = yaml.Unmarshal(yamlFile, conf)
+	if err != nil {
+		log.Fatalf("Unmarshal: %v", err)
+	}
+
+	cluster := node.NewCluster(conf)
+	cluster.Start(*nodeAddr)
 }
