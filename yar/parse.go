@@ -89,24 +89,23 @@ func (vm *VM) Parse(s string) pBlock {
 					kind = SetWordType
 					i++
 				} else if s[i] == '/' {
-					// var path []string
-					// path = append(path, ident)
-					// i++
-					// for i < len(s) {
-					// 	ident := readIdent(s, &i)
-					// 	path = append(path, ident)
-					// 	if i >= len(s) || s[i] != '/' {
-					// 		break
-					// 	}
-					// 	i++
-					// }
-					// if kind == GetWordKind {
-					// 	result = append(result, &GetPathValue{Path: path})
-					// } else {
-					// 	panic("path not implemented")
-					// }
-					// break
-					panic("not implemented")
+					builder := pathBuilder{vm: vm}
+					builder.add(vm.getSymbolID(ident))
+					i++
+					for i < len(s) {
+						ident = readIdent(s, &i)
+						builder.add(vm.getSymbolID(ident))
+						if i >= len(s) || s[i] != '/' {
+							break
+						}
+						i++
+					}
+					if kind == GetWordType {
+						result.add(vm, ptr(builder.first))
+					} else {
+						panic("path not implemented")
+					}
+					break
 				}
 			}
 

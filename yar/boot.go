@@ -78,12 +78,9 @@ func either(vm *VM) Value {
 }
 
 func BootVM(vm *VM) {
-	vm.dictionary.put(vm, vm.getSymbolID("add"), vm.alloc(cell(vm.addNative(add))))
-	vm.dictionary.put(vm, vm.getSymbolID("sub"), vm.alloc(cell(vm.addNative(sub))))
-
-	vm.dictionary.put(vm, vm.getSymbolID("gt"), vm.alloc(cell(vm.addNative(gt))))
-
-	vm.dictionary.put(vm, vm.getSymbolID("either"), vm.alloc(cell(vm.addNative(either))))
-
-	vm.dictionary.put(vm, vm.getSymbolID("fn"), vm.alloc(cell(vm.addNative(fn))))
+	vm.AddNative("add", add)
+	vm.AddNative("sub", sub)
+	vm.AddNative("gt", gt)
+	vm.AddNative("either", either)
+	vm.AddNative("fn", fn)
 }

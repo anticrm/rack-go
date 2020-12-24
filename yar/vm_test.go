@@ -71,7 +71,7 @@ func TestSum(t *testing.T) {
 func TestGetWord(t *testing.T) {
 	vm := NewVM(1000, 100)
 	BootVM(vm)
-	code := vm.Parse("sum: fn [n] [add n n] :sum")
+	code := vm.Parse("sum: fn [n] [add n n] x: 5 :x")
 	result := vm.BindAndExec(code)
 	t.Logf("result: %016x", result)
 }

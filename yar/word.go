@@ -89,6 +89,9 @@ func getWordExec(vm *VM, val Value) Value {
 	}
 	bindingKind := bindings.Kind()
 	bound := vm.getBound[bindingKind](bindings)
+	// if val.Kind() == GetWordType {
+	// 	fmt.Printf(" // %s\n", vm.toString(bound))
+	// }
 	return bound
 }
 

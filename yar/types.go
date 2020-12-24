@@ -29,6 +29,7 @@ const (
 	BooleanType = iota
 	NativeType  = iota
 	ProcType    = iota
+	PathType    = iota
 	LastType    = iota
 )
 

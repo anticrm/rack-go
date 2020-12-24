@@ -46,6 +46,7 @@ type VM struct {
 	readOnly       bool
 	dictionary     pDict
 	proc           []procFunc
+	procNames      []string
 	symbols        map[string]sym
 	nextSymbol     uint
 	InverseSymbols map[sym]string
@@ -59,7 +60,7 @@ type VM struct {
 }
 
 func notImplemented(vm *VM, value Value) string {
-	return "<not implemented>"
+	return fmt.Sprintf("<not implemented:%d>", value.Kind())
 }
 
 func NewVM(memSize int, stackSize int) *VM {
@@ -268,6 +269,7 @@ func (vm *VM) Next() Value {
 }
 
 func (vm *VM) AddNative(name string, f procFunc) {
+	vm.procNames = append(vm.procNames, name)
 	vm.dictionary.put(vm, vm.getSymbolID(name), vm.alloc(cell(vm.addNative(f))))
 }
 
