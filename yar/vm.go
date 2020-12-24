@@ -84,6 +84,7 @@ func NewVM(memSize int, stackSize int) *VM {
 	vm.bindFunc[WordType] = wordBind
 	vm.bindFunc[GetWordType] = wordBind
 	vm.bindFunc[SetWordType] = setWordBind
+	vm.bindFunc[PathType] = pathBind
 	vm.bindFunc[BlockType] = func(vm *VM, ptr ptr, factory bindFactory) {
 		bind(vm, Block(vm.read(ptr)), factory)
 	}
@@ -92,6 +93,7 @@ func NewVM(memSize int, stackSize int) *VM {
 	vm.execFunc[WordType] = wordExec
 	vm.execFunc[GetWordType] = getWordExec
 	vm.execFunc[SetWordType] = setWordExec
+	vm.execFunc[PathType] = getPathExec
 	vm.execFunc[NativeType] = nativeExec
 	vm.execFunc[ProcType] = procExec
 	vm.execFunc[BlockType] = func(vm *VM, value Value) Value { return value }

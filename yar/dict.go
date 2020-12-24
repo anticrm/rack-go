@@ -76,3 +76,13 @@ func (pd pDict) find(vm *VM, sym sym) pSymval {
 	}
 	return 0
 }
+
+func (d dict) find(vm *VM, sym sym) pSymval {
+	for i := d.first(); i != 0; i = i.next(vm) {
+		sv := i.symval(vm)
+		if sv.sym(vm) == sym {
+			return sv
+		}
+	}
+	return 0
+}

@@ -30,6 +30,7 @@ const (
 	NativeType  = iota
 	ProcType    = iota
 	PathType    = iota
+	GetPathType = iota
 	LastType    = iota
 )
 

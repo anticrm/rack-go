@@ -89,19 +89,21 @@ func (vm *VM) Parse(s string) pBlock {
 					kind = SetWordType
 					i++
 				} else if s[i] == '/' {
-					builder := pathBuilder{vm: vm}
-					builder.add(vm.getSymbolID(ident))
+					builder := &pathBuilder{first: 0, last: 0}
+					builder.add(vm, vm.getSymbolID(ident))
 					i++
 					for i < len(s) {
 						ident = readIdent(s, &i)
-						builder.add(vm.getSymbolID(ident))
+						builder.add(vm, vm.getSymbolID(ident))
 						if i >= len(s) || s[i] != '/' {
 							break
 						}
 						i++
 					}
 					if kind == GetWordType {
-						result.add(vm, ptr(builder.first))
+						result.add(vm, vm.alloc(cell(builder.get(GetPathType))))
+					} else if kind == WordType {
+						result.add(vm, vm.alloc(cell(builder.get(PathType))))
 					} else {
 						panic("path not implemented")
 					}

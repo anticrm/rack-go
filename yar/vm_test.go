@@ -91,6 +91,30 @@ func TestFork(t *testing.T) {
 	t.Logf("result: %016x", result)
 }
 
+func TestMakeObject(t *testing.T) {
+	vm := NewVM(1000, 100)
+	BootVM(vm)
+	code := vm.Parse("o: make-object [a: 1 b: 2]")
+	result := vm.BindAndExec(code)
+	t.Logf("result: %016x", result)
+}
+
+func TestPath(t *testing.T) {
+	vm := NewVM(1000, 100)
+	BootVM(vm)
+	code := vm.Parse("o: make-object [a: 42 b: 2] o/a")
+	result := vm.BindAndExec(code)
+	t.Logf("result: %016x", result)
+}
+
+func TestPath2(t *testing.T) {
+	vm := NewVM(1000, 100)
+	BootVM(vm)
+	code := vm.Parse("o: make-object [a: 42 b: make-object [c: 55]] o/b/c")
+	result := vm.BindAndExec(code)
+	t.Logf("result: %016x", result)
+}
+
 func BenchmarkFib(t *testing.B) {
 	vm := NewVM(1000, 100)
 	BootVM(vm)

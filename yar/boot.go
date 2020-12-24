@@ -77,10 +77,33 @@ func either(vm *VM) Value {
 	return vm.call(ifFalse)
 }
 
+func makeObject(vm *VM) Value {
+	block := Block(vm.Next())
+
+	object := vm.allocDict()
+
+	bind(vm, block, func(sym sym, create bool) bound {
+		symValPtr := object.find(vm, sym)
+		if symValPtr == 0 {
+			if create {
+				object.put(vm, sym, 0)
+				symValPtr = object.find(vm, sym) // TODO: fix this garbage
+			} else {
+				return 0
+			}
+		}
+		return makeMapBinding(ptr(symValPtr))
+	})
+
+	vm.call(block)
+	return Value(vm.read(ptr(object)))
+}
+
 func BootVM(vm *VM) {
 	vm.AddNative("add", add)
 	vm.AddNative("sub", sub)
 	vm.AddNative("gt", gt)
 	vm.AddNative("either", either)
 	vm.AddNative("fn", fn)
+	vm.AddNative("make-object", makeObject)
 }
