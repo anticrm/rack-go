@@ -25,7 +25,7 @@ func makeDict() dict {
 	return dict(makeObj(0, 0, MapType))
 }
 
-func (vm *VM) allocDict() pDict {
+func (vm *VM) AllocDict() pDict {
 	return pDict(vm.alloc(cell(makeDict())))
 }
 
@@ -44,7 +44,7 @@ func (s symval) val() ptr { return ptr(item(s).val()) }
 
 // func (p pSymval) setValue(vm *VM, value value) sym { return pPtrval(p).setValue(vm, value) }
 
-func (pd pDict) put(vm *VM, sym sym, value ptr) {
+func (pd pDict) Put(vm *VM, sym sym, value ptr) {
 	d := dict(vm.read(ptr(pd)))
 	last := pDictEntry(0)
 	for i := d.first(); i != 0; i = i.next(vm) {

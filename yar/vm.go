@@ -20,6 +20,7 @@ import (
 	"encoding/gob"
 	"fmt"
 	"log"
+	"strings"
 )
 
 const (
@@ -84,7 +85,7 @@ func NewVM(memSize int, stackSize int) *VM {
 	vm.toStringFunc[BlockType] = blockToString
 	vm.toStringFunc[WordType] = wordToString
 
-	vm.dictionary = vm.allocDict()
+	vm.dictionary = vm.AllocDict()
 	vm.initBindings()
 
 	return vm
@@ -203,7 +204,7 @@ func (vm *VM) bind(block Block) {
 		if symValPtr == 0 {
 			if create {
 				// fmt.Printf("putting symbol %d - %s\n", sym, vm.inverseSymbols[sym])
-				vm.dictionary.put(vm, sym, 0)
+				vm.dictionary.Put(vm, sym, 0)
 				symValPtr = vm.dictionary.find(vm, sym) // TODO: fix this garbage
 				// fmt.Printf("found %16x\n", symValPtr)
 			} else {
@@ -258,19 +259,51 @@ func (vm *VM) Next() Value {
 	return vm.nextNoInfix()
 }
 
-type Library interface {
-	getFunction(name string) procFunc
+type Pkg struct {
+	name string
+	fn   map[string]procFunc
 }
 
-func (vm *VM) addNativeFunc(name string, f procFunc) {
-	vm.procNames = append(vm.procNames, name)
-	vm.dictionary.put(vm, vm.getSymbolID(name), vm.alloc(cell(vm.addNative(f))))
+type Library struct {
+	packages []*Pkg
 }
 
-func (vm *VM) AddNative(name string, lib Library) {
-	vm.procNames = append(vm.procNames, name)
-	vm.dictionary.put(vm, vm.getSymbolID(name), vm.alloc(cell(vm.addNative(lib.getFunction(name)))))
+func (l *Library) getFunction(name string) procFunc {
+	s := strings.Split(name, "/")
+	for _, p := range l.packages {
+		if p.name == s[0] {
+			return p.fn[s[1]]
+		}
+	}
+	panic("function not found")
 }
+
+func NewPackage(name string) *Pkg {
+	return &Pkg{name: name, fn: make(map[string]procFunc)}
+}
+
+func (p *Pkg) AddFunc(name string, fn procFunc) {
+	p.fn[name] = fn
+}
+
+// func (vm *VM) addNativeFunc(name string, f procFunc) {
+// 	vm.procNames = append(vm.procNames, name)
+// 	vm.dictionary.Put(vm, vm.getSymbolID(name), vm.alloc(cell(vm.addNative(f))))
+// }
+
+func (vm *VM) LoadPackage(pkg *Pkg, dict pDict) {
+	for name, fn := range pkg.fn {
+		native := vm.addNative(fn)
+		sym := sym(vm.getSymbolID(name))
+		dict.Put(vm, sym, vm.alloc(cell(native)))
+		vm.procNames = append(vm.procNames, pkg.name+"/"+name)
+	}
+}
+
+// func (vm *VM) AddNative(name string, lib Library) {
+// 	vm.procNames = append(vm.procNames, name)
+// 	vm.dictionary.Put(vm, vm.getSymbolID(name), vm.alloc(cell(vm.addNative(lib.getFunction(name)))))
+// }
 
 func (vm *VM) Push(value Value) {
 	vm.push(value)

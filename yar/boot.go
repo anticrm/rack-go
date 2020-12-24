@@ -80,13 +80,13 @@ func either(vm *VM) Value {
 func makeObject(vm *VM) Value {
 	block := Block(vm.Next())
 
-	object := vm.allocDict()
+	object := vm.AllocDict()
 
 	bind(vm, block, func(sym sym, create bool) bound {
 		symValPtr := object.find(vm, sym)
 		if symValPtr == 0 {
 			if create {
-				object.put(vm, sym, 0)
+				object.Put(vm, sym, 0)
 				symValPtr = object.find(vm, sym) // TODO: fix this garbage
 			} else {
 				return 0
@@ -110,18 +110,17 @@ var (
 	}
 )
 
-type pkg struct {
-	lib map[string]procFunc
+func corePackage() *Pkg {
+	result := NewPackage("core")
+	result.AddFunc("add", add)
+	result.AddFunc("sub", sub)
+	result.AddFunc("gt", gt)
+	result.AddFunc("either", either)
+	result.AddFunc("fn", fn)
+	result.AddFunc("make-object", makeObject)
+	return result
 }
 
-func (p *pkg) getFunction(name string) procFunc { return p.lib[name] }
-
 func BootVM(vm *VM) {
-	core := &pkg{lib: coreLibrary}
-	vm.AddNative("add", core)
-	vm.AddNative("sub", core)
-	vm.AddNative("gt", core)
-	vm.AddNative("either", core)
-	vm.AddNative("fn", core)
-	vm.AddNative("make-object", core)
+	vm.LoadPackage(corePackage(), vm.dictionary)
 }
