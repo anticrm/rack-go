@@ -48,7 +48,7 @@ type VM struct {
 	sp             uint
 	result         Value
 	readOnly       bool
-	dictionary     pDict
+	Dictionary     pDict
 	proc           []procFunc
 	procNames      []string
 	symbols        map[string]sym
@@ -89,7 +89,7 @@ func NewVM(memSize int, stackSize int) *VM {
 	vm.toStringFunc[BlockType] = blockToString
 	vm.toStringFunc[WordType] = wordToString
 
-	vm.dictionary = vm.AllocDict()
+	vm.Dictionary = vm.AllocDict()
 	vm.initBindings()
 
 	return vm
@@ -211,12 +211,12 @@ func bind(vm *VM, block Block, factory bindFactory) {
 
 func (vm *VM) bind(block Block) {
 	bind(vm, block, func(sym sym, create bool) bound {
-		symValPtr := vm.dictionary.find(vm, sym)
+		symValPtr := vm.Dictionary.find(vm, sym)
 		if symValPtr == 0 {
 			if create {
 				// fmt.Printf("putting symbol %d - %s\n", sym, vm.inverseSymbols[sym])
-				vm.dictionary.Put(vm, sym, 0)
-				symValPtr = vm.dictionary.find(vm, sym) // TODO: fix this garbage
+				vm.Dictionary.Put(vm, sym, 0)
+				symValPtr = vm.Dictionary.find(vm, sym) // TODO: fix this garbage
 				// fmt.Printf("found %16x\n", symValPtr)
 			} else {
 				// fmt.Printf("binding not found %d - %s\n", sym, vm.inverseSymbols[sym])
@@ -335,7 +335,7 @@ type SerialVM struct {
 func (vm *VM) Save() []byte {
 	var result bytes.Buffer
 
-	svm := &SerialVM{Top: vm.top, Dictionary: uint(vm.dictionary), Mem: vm.mem, Symbols: vm.symbols, ProcNames: vm.procNames}
+	svm := &SerialVM{Top: vm.top, Dictionary: uint(vm.Dictionary), Mem: vm.mem, Symbols: vm.symbols, ProcNames: vm.procNames}
 
 	enc := gob.NewEncoder(&result)
 	err := enc.Encode(svm)
@@ -356,7 +356,7 @@ func LoadVM(data []byte, stackSize int, lib Library) *VM {
 		log.Fatal("decode error 1:", err)
 	}
 
-	vm := &VM{top: svm.Top, mem: svm.Mem, dictionary: pDict(svm.Dictionary), symbols: svm.Symbols, procNames: svm.ProcNames}
+	vm := &VM{top: svm.Top, mem: svm.Mem, Dictionary: pDict(svm.Dictionary), symbols: svm.Symbols, procNames: svm.ProcNames}
 
 	vm.InverseSymbols = make(map[sym]string)
 	for k, v := range vm.symbols {

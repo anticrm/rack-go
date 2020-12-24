@@ -122,5 +122,5 @@ func corePackage() *Pkg {
 }
 
 func BootVM(vm *VM) {
-	vm.LoadPackage(corePackage(), vm.dictionary)
+	vm.LoadPackage(corePackage(), vm.Dictionary)
 }

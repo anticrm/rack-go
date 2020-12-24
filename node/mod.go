@@ -18,7 +18,7 @@ package node
 import "github.com/anticrm/rack/yar"
 
 func clusterInit(vm *yar.VM) yar.Value {
-	vm.D
+	// vm.Dictionary.Put(vm, "nodes", MakeBlock(vm, []))
 	return 0
 }
 

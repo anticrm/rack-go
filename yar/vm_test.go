@@ -21,7 +21,7 @@ import (
 
 func TestBind(t *testing.T) {
 	vm := NewVM(1000, 100)
-	vm.dictionary.Put(vm, vm.getSymbolID("native"), vm.alloc(cell(vm.addNative(func(vm *VM) Value { return 42 }))))
+	vm.Dictionary.Put(vm, vm.getSymbolID("native"), vm.alloc(cell(vm.addNative(func(vm *VM) Value { return 42 }))))
 	code := vm.Parse("native [x y]")
 	t.Logf("%s", vm.toString(Value(vm.read(ptr(code)))))
 	vm.dump()
