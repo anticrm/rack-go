@@ -31,6 +31,7 @@ const (
 	ProcType    = iota
 	PathType    = iota
 	GetPathType = iota
+	StringType  = iota
 	LastType    = iota
 )
 
@@ -153,6 +154,12 @@ func procExec(vm *VM, value Value) Value {
 	return result
 }
 
+///
+
+func makeString(value int) imm {
+	return makeImm(value, StringType)
+}
+
 // V M T
 
 func identity(vm *VM, value Value) Value                      { return value }
@@ -174,6 +181,7 @@ var (
 		procExec,
 		getPathExec,
 		getPathExec,
+		identity,
 	}
 
 	bindFunc = []func(vm *VM, ptr ptr, factory bindFactory){
@@ -189,30 +197,6 @@ var (
 		bindNothing,
 		pathBind,
 		pathBind,
+		bindNothing,
 	}
 )
-
-// const (
-// 	BlockType   = iota
-// 	WordType    = iota
-// 	GetWordType = iota
-// 	SetWordType = iota
-// 	QuoteType   = iota
-// 	MapType     = iota
-// 	IntegerType = iota
-// 	BooleanType = iota
-// 	NativeType  = iota
-// 	ProcType    = iota
-// 	PathType    = iota
-// 	GetPathType = iota
-// 	LastType    = iota
-// )
-
-// vm.execFunc[WordType] = wordExec
-// vm.execFunc[GetWordType] = getWordExec
-// vm.execFunc[SetWordType] = setWordExec
-// vm.execFunc[PathType] = getPathExec
-// vm.execFunc[NativeType] = nativeExec
-// vm.execFunc[ProcType] = procExec
-// vm.execFunc[BlockType] = func(vm *VM, value Value) Value { return value }
-// vm.execFunc[IntegerType] = func(vm *VM, value Value) Value { return value }

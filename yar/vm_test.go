@@ -117,6 +117,14 @@ func TestPath2(t *testing.T) {
 	t.Logf("result: %016x", result)
 }
 
+func TestStrings(t *testing.T) {
+	vm := NewVM(1000, 100)
+	BootVM(vm)
+	code := vm.Parse("o: [\"a\", \"b\"]")
+	result := vm.BindAndExec(code)
+	t.Logf("result: %016x", result)
+}
+
 // func TestSave(t *testing.T) {
 // 	vm := NewVM(1000, 100)
 // 	BootVM(vm)

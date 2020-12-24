@@ -71,6 +71,18 @@ func (vm *VM) Parse(s string) pBlock {
 				i++
 			}
 			result.add(vm, vm.alloc(cell(makeInt(val))))
+
+		case '"':
+			var builder strings.Builder
+			i++
+			for i < len(s) && s[i] != '"' {
+				builder.WriteByte(s[i])
+				i++
+			}
+			result.add(vm, vm.alloc(cell(vm.addString(builder.String()))))
+			i++
+			break
+
 		default:
 			kind := WordType
 			c := s[i]

@@ -13,22 +13,4 @@
 // limitations under the License.
 //
 
-package node
-
-import "github.com/anticrm/rack/yar"
-
-func clusterInit(vm *yar.VM) yar.Value {
-	vm.D
-	return 0
-}
-
-func clusterPackage() *yar.Pkg {
-	result := yar.NewPackage("cluster")
-	result.AddFunc("init", clusterInit)
-	return result
-}
-
-func loadClusterPackage(vm *yar.VM) {
-	mod := vm.AllocDict()
-	vm.LoadPackage(clusterPackage(), mod)
-}
+package yar

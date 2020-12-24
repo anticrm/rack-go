@@ -54,6 +54,8 @@ type VM struct {
 	symbols        map[string]sym
 	nextSymbol     uint
 	InverseSymbols map[sym]string
+	strings        map[uint]string
+	nextString     uint
 	Services       map[string]interface{}
 
 	toStringFunc [LastType]func(vm *VM, value Value) string
@@ -73,6 +75,8 @@ func NewVM(memSize int, stackSize int) *VM {
 		top:            0,
 		stack:          make([]Value, stackSize),
 		sp:             0,
+		nextString:     0,
+		strings:        make(map[uint]string),
 		nextSymbol:     0,
 		symbols:        make(map[string]uint),
 		InverseSymbols: make(map[sym]string),
@@ -174,6 +178,13 @@ func (vm *VM) getSymbolID(sym string) uint {
 		vm.InverseSymbols[id] = sym
 	}
 	return id
+}
+
+func (vm *VM) addString(str string) Value {
+	vm.nextString++
+	id := vm.nextString
+	vm.strings[id] = str
+	return makeString(int(id))
 }
 
 func (vm *VM) addNative(f procFunc) Value {
