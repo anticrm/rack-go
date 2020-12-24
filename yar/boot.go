@@ -99,11 +99,29 @@ func makeObject(vm *VM) Value {
 	return Value(vm.read(ptr(object)))
 }
 
+var (
+	coreLibrary = map[string]procFunc{
+		"add":         add,
+		"sub":         sub,
+		"gt":          gt,
+		"either":      either,
+		"fn":          fn,
+		"make-object": makeObject,
+	}
+)
+
+type pkg struct {
+	lib map[string]procFunc
+}
+
+func (p *pkg) getFunction(name string) procFunc { return p.lib[name] }
+
 func BootVM(vm *VM) {
-	vm.AddNative("add", add)
-	vm.AddNative("sub", sub)
-	vm.AddNative("gt", gt)
-	vm.AddNative("either", either)
-	vm.AddNative("fn", fn)
-	vm.AddNative("make-object", makeObject)
+	core := &pkg{lib: coreLibrary}
+	vm.AddNative("add", core)
+	vm.AddNative("sub", core)
+	vm.AddNative("gt", core)
+	vm.AddNative("either", core)
+	vm.AddNative("fn", core)
+	vm.AddNative("make-object", core)
 }

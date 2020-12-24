@@ -82,7 +82,7 @@ func TestGetWord(t *testing.T) {
 func TestFork(t *testing.T) {
 	vm := NewVM(1000, 100)
 	BootVM(vm)
-	vm.AddNative("fork", func(vm *VM) Value {
+	vm.addNativeFunc("fork", func(vm *VM) Value {
 		fn := Proc(vm.Next())
 		clone := vm.Clone()
 		stack := []Value{makeInt(42), makeInt(41)}
@@ -133,8 +133,9 @@ func TestSave(t *testing.T) {
 	BootVM(vm)
 	code := vm.Parse("sum: fn [n] [add n n] sum 5")
 	data := vm.Save()
-	vm2 := LoadVM(data, 100)
-	// BootVM(vm2)
+	lib := &pkg{lib: coreLibrary}
+	vm2 := LoadVM(data, 100, lib)
+	//BootVM(vm2)
 	fmt.Printf("%+v\n\n", vm)
 	fmt.Printf("%+v\n", vm2)
 	result := vm2.BindAndExec(code)

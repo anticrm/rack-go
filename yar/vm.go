@@ -258,9 +258,18 @@ func (vm *VM) Next() Value {
 	return vm.nextNoInfix()
 }
 
-func (vm *VM) AddNative(name string, f procFunc) {
+type Library interface {
+	getFunction(name string) procFunc
+}
+
+func (vm *VM) addNativeFunc(name string, f procFunc) {
 	vm.procNames = append(vm.procNames, name)
 	vm.dictionary.put(vm, vm.getSymbolID(name), vm.alloc(cell(vm.addNative(f))))
+}
+
+func (vm *VM) AddNative(name string, lib Library) {
+	vm.procNames = append(vm.procNames, name)
+	vm.dictionary.put(vm, vm.getSymbolID(name), vm.alloc(cell(vm.addNative(lib.getFunction(name)))))
 }
 
 func (vm *VM) Push(value Value) {
@@ -276,12 +285,13 @@ type SerialVM struct {
 	Dictionary uint
 	Mem        []cell
 	Symbols    map[string]sym
+	ProcNames  []string
 }
 
 func (vm *VM) Save() []byte {
 	var result bytes.Buffer
 
-	svm := &SerialVM{Top: vm.top, Dictionary: uint(vm.dictionary), Mem: vm.mem, Symbols: vm.symbols}
+	svm := &SerialVM{Top: vm.top, Dictionary: uint(vm.dictionary), Mem: vm.mem, Symbols: vm.symbols, ProcNames: vm.procNames}
 
 	enc := gob.NewEncoder(&result)
 	err := enc.Encode(svm)
@@ -292,7 +302,7 @@ func (vm *VM) Save() []byte {
 	return result.Bytes()
 }
 
-func LoadVM(data []byte, stackSize int) *VM {
+func LoadVM(data []byte, stackSize int, lib Library) *VM {
 	reader := bytes.NewReader(data)
 	var svm SerialVM
 
@@ -302,13 +312,17 @@ func LoadVM(data []byte, stackSize int) *VM {
 		log.Fatal("decode error 1:", err)
 	}
 
-	vm := &VM{top: svm.Top, mem: svm.Mem, dictionary: pDict(svm.Dictionary), symbols: svm.Symbols}
+	vm := &VM{top: svm.Top, mem: svm.Mem, dictionary: pDict(svm.Dictionary), symbols: svm.Symbols, procNames: svm.ProcNames}
 
 	vm.InverseSymbols = make(map[sym]string)
 	for k, v := range vm.symbols {
 		vm.InverseSymbols[v] = k
 	}
 	vm.nextSymbol = uint(len(vm.symbols))
+
+	for _, n := range vm.procNames {
+		vm.proc = append(vm.proc, lib.getFunction(n))
+	}
 
 	vm.stack = make([]Value, stackSize)
 	vm.initBindings()
