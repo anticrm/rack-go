@@ -16,7 +16,10 @@
 package yar
 
 import (
+	"bytes"
+	"encoding/gob"
 	"fmt"
+	"log"
 )
 
 const (
@@ -53,8 +56,8 @@ type VM struct {
 	Services       map[string]interface{}
 
 	toStringFunc [LastType]func(vm *VM, value Value) string
-	bindFunc     [LastType]func(vm *VM, ptr ptr, factory bindFactory)
-	execFunc     [LastType]func(vm *VM, value Value) Value
+	bindFunc     []func(vm *VM, ptr ptr, factory bindFactory)
+	execFunc     []func(vm *VM, value Value) Value
 	getBound     [LastBinding]func(bindings imm) Value
 	setBound     [LastBinding]func(bindings imm, value Value)
 }
@@ -81,32 +84,17 @@ func NewVM(memSize int, stackSize int) *VM {
 	vm.toStringFunc[BlockType] = blockToString
 	vm.toStringFunc[WordType] = wordToString
 
-	vm.bindFunc[WordType] = wordBind
-	vm.bindFunc[GetWordType] = wordBind
-	vm.bindFunc[SetWordType] = setWordBind
-	vm.bindFunc[PathType] = pathBind
-	vm.bindFunc[BlockType] = func(vm *VM, ptr ptr, factory bindFactory) {
-		bind(vm, Block(vm.read(ptr)), factory)
-	}
-	vm.bindFunc[IntegerType] = func(vm *VM, ptr ptr, factory bindFactory) {}
-
-	vm.execFunc[WordType] = wordExec
-	vm.execFunc[GetWordType] = getWordExec
-	vm.execFunc[SetWordType] = setWordExec
-	vm.execFunc[PathType] = getPathExec
-	vm.execFunc[NativeType] = nativeExec
-	vm.execFunc[ProcType] = procExec
-	vm.execFunc[BlockType] = func(vm *VM, value Value) Value { return value }
-	vm.execFunc[IntegerType] = func(vm *VM, value Value) Value { return value }
-
 	vm.dictionary = vm.allocDict()
-
 	vm.initBindings()
 
 	return vm
 }
 
 func (vm *VM) initBindings() {
+
+	vm.execFunc = execFunc
+	vm.bindFunc = bindFunc
+
 	vm.getBound[MapBinding] = func(binding imm) Value {
 		symValPtr := intValue(binding)
 		symVal := symval(vm.read(ptr(symValPtr)))
@@ -282,3 +270,63 @@ func (vm *VM) Push(value Value) {
 func (vm *VM) Show() {
 	fmt.Printf("Stack pointer: %d\n", vm.sp)
 }
+
+type SerialVM struct {
+	Top        uint
+	Dictionary uint
+	Mem        []cell
+	Symbols    map[string]sym
+}
+
+func (vm *VM) Save() []byte {
+	var result bytes.Buffer
+
+	svm := &SerialVM{Top: vm.top, Dictionary: uint(vm.dictionary), Mem: vm.mem, Symbols: vm.symbols}
+
+	enc := gob.NewEncoder(&result)
+	err := enc.Encode(svm)
+	if err != nil {
+		log.Fatal("encode error:", err)
+	}
+
+	return result.Bytes()
+}
+
+func LoadVM(data []byte, stackSize int) *VM {
+	reader := bytes.NewReader(data)
+	var svm SerialVM
+
+	dec := gob.NewDecoder(reader)
+	err := dec.Decode(&svm)
+	if err != nil {
+		log.Fatal("decode error 1:", err)
+	}
+
+	vm := &VM{top: svm.Top, mem: svm.Mem, dictionary: pDict(svm.Dictionary), symbols: svm.Symbols}
+
+	vm.InverseSymbols = make(map[sym]string)
+	for k, v := range vm.symbols {
+		vm.InverseSymbols[v] = k
+	}
+	vm.nextSymbol = uint(len(vm.symbols))
+
+	vm.stack = make([]Value, stackSize)
+	vm.initBindings()
+
+	return vm
+}
+
+// pc             pBlockEntry
+// mem            []cell
+// stack          []Value
+// top            uint
+// sp             uint
+// result         Value
+// readOnly       bool
+// dictionary     pDict
+// proc           []procFunc
+// procNames      []string
+// symbols        map[string]sym
+// nextSymbol     uint
+// InverseSymbols map[sym]string
+// Services       map[string]interface{}

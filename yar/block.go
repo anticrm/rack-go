@@ -48,6 +48,10 @@ func (b pBlockEntry) Value(vm *VM) Value      { return Value(vm.read(b.pval(vm))
 // 	return ptrval.ptr(), true
 // }
 
+func blockBind(vm *VM, ptr ptr, factory bindFactory) {
+	bind(vm, Block(vm.read(ptr)), factory)
+}
+
 func makeBlock(first pBlockEntry, last pBlockEntry) Value {
 	return Value(makeObj(int(first), ptr(last), BlockType))
 }

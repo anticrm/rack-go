@@ -15,7 +15,10 @@
 
 package yar
 
-import "testing"
+import (
+	"fmt"
+	"testing"
+)
 
 func TestBind(t *testing.T) {
 	vm := NewVM(1000, 100)
@@ -112,6 +115,29 @@ func TestPath2(t *testing.T) {
 	BootVM(vm)
 	code := vm.Parse("o: make-object [a: 42 b: make-object [c: 55]] o/b/c")
 	result := vm.BindAndExec(code)
+	t.Logf("result: %016x", result)
+}
+
+// func TestSave(t *testing.T) {
+// 	vm := NewVM(1000, 100)
+// 	BootVM(vm)
+// 	code := vm.Parse("o: make-object [a: 42 b: make-object [c: 55]] o/b/c")
+// 	result := vm.BindAndExec(code)
+// 	t.Logf("result: %016x", result)
+// 	bytes := vm.Save()
+// 	t.Logf("result: %s", bytes)
+// }
+
+func TestSave(t *testing.T) {
+	vm := NewVM(1000, 100)
+	BootVM(vm)
+	code := vm.Parse("sum: fn [n] [add n n] sum 5")
+	data := vm.Save()
+	vm2 := LoadVM(data, 100)
+	// BootVM(vm2)
+	fmt.Printf("%+v\n\n", vm)
+	fmt.Printf("%+v\n", vm2)
+	result := vm2.BindAndExec(code)
 	t.Logf("result: %016x", result)
 }
 

@@ -152,3 +152,67 @@ func procExec(vm *VM, value Value) Value {
 	vm.sp -= uint(stackSize)
 	return result
 }
+
+// V M T
+
+func identity(vm *VM, value Value) Value                      { return value }
+func execNotImplemented(vm *VM, value Value) Value            { panic("not implemented") }
+func bindNotImplemented(vm *VM, ptr ptr, factory bindFactory) { panic("not implemented") }
+func bindNothing(vm *VM, ptr ptr, factory bindFactory)        {}
+
+var (
+	execFunc = []func(vm *VM, value Value) Value{
+		identity,
+		wordExec,
+		getWordExec,
+		setWordExec,
+		execNotImplemented,
+		identity, // map
+		identity, // int
+		identity, // bool
+		nativeExec,
+		procExec,
+		getPathExec,
+		getPathExec,
+	}
+
+	bindFunc = []func(vm *VM, ptr ptr, factory bindFactory){
+		blockBind,
+		wordBind,
+		wordBind,
+		setWordBind,
+		bindNotImplemented,
+		bindNothing, // map
+		bindNothing,
+		bindNothing,
+		bindNothing,
+		bindNothing,
+		pathBind,
+		pathBind,
+	}
+)
+
+// const (
+// 	BlockType   = iota
+// 	WordType    = iota
+// 	GetWordType = iota
+// 	SetWordType = iota
+// 	QuoteType   = iota
+// 	MapType     = iota
+// 	IntegerType = iota
+// 	BooleanType = iota
+// 	NativeType  = iota
+// 	ProcType    = iota
+// 	PathType    = iota
+// 	GetPathType = iota
+// 	LastType    = iota
+// )
+
+// vm.execFunc[WordType] = wordExec
+// vm.execFunc[GetWordType] = getWordExec
+// vm.execFunc[SetWordType] = setWordExec
+// vm.execFunc[PathType] = getPathExec
+// vm.execFunc[NativeType] = nativeExec
+// vm.execFunc[ProcType] = procExec
+// vm.execFunc[BlockType] = func(vm *VM, value Value) Value { return value }
+// vm.execFunc[IntegerType] = func(vm *VM, value Value) Value { return value }

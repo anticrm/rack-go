@@ -17,6 +17,7 @@ package node
 
 import (
 	"context"
+	"encoding/binary"
 	"fmt"
 	"log"
 	"os"
@@ -161,6 +162,26 @@ func (c *Cluster) Start(nodeAddr string) {
 
 	cmdChannel := make(chan string)
 	raftStopper := syncutil.NewStopper()
+
+	raftStopper.RunWorker(func() {
+		ticker := time.NewTicker(10 * time.Second)
+		for {
+			select {
+			case <-ticker.C:
+				fmt.Fprintf(os.Stdout, "synchronizing views...\n")
+				ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+				result, err := nh.SyncRead(ctx, clusterID, []byte{})
+				cancel()
+				if err == nil {
+					var count uint64
+					count = binary.LittleEndian.Uint64(result.([]byte))
+					fmt.Fprintf(os.Stdout, "count: %d\n", count)
+				}
+			case <-raftStopper.ShouldStop():
+				return
+			}
+		}
+	})
 
 	raftStopper.RunWorker(func() {
 		cs := nh.GetNoOPSession(clusterID)
