@@ -86,20 +86,12 @@ func print(vm *VM) Value {
 }
 
 func _append(vm *VM) Value {
-	// series := vm.Next().Block()
-	// value := vm.Next()
+	series := vm.Next().Block()
+	value := vm.Next()
 
-	// series.add(vm, value)
+	series.Add(vm, value)
 
-	// var last pBlockEntry
-	// for i := series.First(); i != 0; i = i.Next(vm) {
-	// 	last = i
-	// }
-
-	// if last != 0 {
-
-	// }
-	return 0
+	return series.Value()
 }
 
 func foreach(vm *VM) Value {
@@ -151,6 +143,11 @@ func makeObject(vm *VM) Value {
 	return Value(vm.read(ptr(object)))
 }
 
+// func get(vm *VM) Value {
+// 	w := vm.Next().Word()
+// 	vm.bindFunc[GetWordType](vm, )
+// }
+
 // var (
 // 	coreLibrary = map[string]procFunc{
 // 		"add":         add,
@@ -174,6 +171,7 @@ func corePackage() *Pkg {
 	result.AddFunc("make-object", makeObject)
 	result.AddFunc("foreach", foreach)
 	result.AddFunc("print", print)
+	result.AddFunc("append", _append)
 	return result
 }
 

@@ -130,6 +130,14 @@ func TestForeach(t *testing.T) {
 	t.Logf("result: %016x", result)
 }
 
+func TestAppend(t *testing.T) {
+	vm := NewVM(1000, 100)
+	BootVM(vm)
+	code := vm.Parse("print append [\"a\" \"b\"] \"c\"")
+	result := vm.BindAndExec(code)
+	t.Logf("result: %016x", result)
+}
+
 func TestSave(t *testing.T) {
 	// vm := NewVM(1000, 100)
 	// BootVM(vm)
@@ -148,7 +156,5 @@ func BenchmarkFib(t *testing.B) {
 	vm := NewVM(1000, 100)
 	BootVM(vm)
 	code := vm.Parse("fib: fn [n] [either gt n 1 [add fib sub n 2 fib sub n 1] [n]] fib 40")
-	c := Block(vm.read(ptr(code)))
-	vm.bind(c)
-	vm.call(c)
+	vm.BindAndExec(code)
 }
