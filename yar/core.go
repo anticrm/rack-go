@@ -99,24 +99,23 @@ func foreach(vm *VM) Value {
 	series := vm.Next().Block()
 	code := vm.Next().Block()
 
+	offset := int(vm.bp)
 	bind(vm, code, func(sym sym, create bool) Binding {
 		if sym == w.Sym() {
-			return MakeStackBinding(-1)
+			return MakeWordBinding(offset)
 		}
 		return 0
 	})
 
 	var result Value
-
-	// fmt.Printf("series %s\n", vm.toString(series.Value()))
+	vm.bp++
 
 	for i := series.First(vm); i != 0; i = i.Next(vm) {
-		val := i.Value(vm)
-		// fmt.Printf("value: %016x\n", val)
-		vm.Push(val)
+		vm.bindStack[offset] = i.Value(vm)
 		result = vm.call(code)
-		vm.sp = vm.sp - 1
 	}
+
+	vm.bp = vm.bp - 1
 
 	return result
 }
@@ -126,20 +125,23 @@ func repeat(vm *VM) Value {
 	times := vm.Next().Integer().Value().Val()
 	code := vm.Next().Block()
 
+	offset := int(vm.bp)
 	bind(vm, code, func(sym sym, create bool) Binding {
 		if sym == w.Sym() {
-			return MakeStackBinding(-1)
+			return MakeWordBinding(offset)
 		}
 		return 0
 	})
 
 	var result Value
+	vm.bp++
 
 	for i := 0; i < times; i++ {
-		vm.Push(MakeInt(i).Value())
+		vm.bindStack[offset] = MakeInt(i).Value()
 		result = vm.call(code)
-		vm.sp = vm.sp - 1
 	}
+
+	vm.bp = vm.bp - 1
 
 	return result
 }

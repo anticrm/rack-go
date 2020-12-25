@@ -16,7 +16,6 @@
 package yar
 
 import (
-	"fmt"
 	"strings"
 )
 
@@ -94,7 +93,7 @@ func (b pFirstLast) add(vm *VM, value Value) {
 
 func blockToString(vm *VM, b Value) string {
 	var result strings.Builder
-	result.WriteString(fmt.Sprintf(" #%016x ", b))
+	// result.WriteString(fmt.Sprintf(" #%016x ", b))
 	result.WriteByte('[')
 
 	block := Block(b)

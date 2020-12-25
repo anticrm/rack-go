@@ -16,7 +16,6 @@
 package yar
 
 import (
-	"fmt"
 	"strconv"
 	"strings"
 )
@@ -96,7 +95,7 @@ func (pd pDictFirst) find(vm *VM, sym sym) pSymval {
 
 func dictToString(vm *VM, b Value) string {
 	var result strings.Builder
-	result.WriteString(fmt.Sprintf(" #%016x ", b))
+	// result.WriteString(fmt.Sprintf(" #%016x ", b))
 	result.WriteByte('[')
 
 	dict := b.Dict()
@@ -118,5 +117,5 @@ func dictToString(vm *VM, b Value) string {
 func symvalToString(vm *VM, sv pSymval) string {
 	val := vm.read(ptr(sv.val(vm)))
 	sym := sv.sym(vm)
-	return vm.InverseSymbols[sym] + "(" + strconv.Itoa(int(sym)) + ")" + ": " + vm.ToString(Value(val))
+	return vm.InverseSymbols[sym] + "(" + strconv.Itoa(int(sym)) + ")" + ": " + vm.ToString(Value(val)) + " "
 }

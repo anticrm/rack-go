@@ -26,6 +26,7 @@ import (
 const (
 	MapBinding   = iota
 	StackBinding = iota
+	WordBinding  = iota
 	LastBinding  = iota
 )
 
@@ -35,6 +36,10 @@ func makeMapBinding(value ptr) Binding {
 
 func MakeStackBinding(value int) Binding {
 	return Binding(makeImm(value, StackBinding))
+}
+
+func MakeWordBinding(value int) Binding {
+	return Binding(makeImm(value, WordBinding))
 }
 
 type sym = uint
@@ -47,6 +52,8 @@ type VM struct {
 	top            uint
 	sp             uint
 	result         Value
+	bindStack      []Value
+	bp             uint
 	readOnly       bool
 	Dictionary     dict
 	proc           []procFunc
@@ -76,6 +83,8 @@ func NewVM(memSize int, stackSize int) *VM {
 		top:            0,
 		stack:          make([]Value, stackSize),
 		sp:             0,
+		bindStack:      make([]Value, 25),
+		bp:             0,
 		nextString:     0,
 		strings:        make(map[uint]string),
 		nextSymbol:     0,
@@ -128,6 +137,12 @@ func (vm *VM) initBindings() {
 		offset := binding.Val()
 		return Value(vm.stack[int(vm.sp)+offset])
 	}
+
+	vm.getBound[WordBinding] = func(binding Binding) Value {
+		offset := binding.Val()
+		return Value(vm.bindStack[offset])
+	}
+
 }
 
 func (vm *VM) Clone() *VM {

@@ -38,11 +38,11 @@ cluster: make-object [
 		append nodes make-object [addr: "localhost:63001" cpus: 2 docker-procs: []]
 		append nodes make-object [addr: "localhost:63002" cpus: 2 docker-procs: []]
 	]
-	docker-service: fn [image port] [
+	docker-service: fn [_image _port] [
+		print image
 		foreach node nodes [
 			repeat cpu node/cpus [
-				print node
-				append node/docker-procs make-object [image: image port: port]
+				append node/docker-procs make-object [image: _image port: _port]
 			]
 		]
 	]
