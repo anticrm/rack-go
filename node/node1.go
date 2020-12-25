@@ -37,7 +37,7 @@ func NewNode1() *Node1 {
 
 	vm := yar.NewVM(1000, 100)
 	yar.BootVM(vm)
-	vm.AddNative("expose", expose)
+	// vm.AddNative("expose", expose)
 
 	service := &HttpService{mux: http.NewServeMux()}
 	vm.Services["http"] = service

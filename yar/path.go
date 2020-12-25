@@ -24,10 +24,10 @@ type path obj
 type pathEntry obj
 type pPathEntry ptr
 
-func (p path) bindings() pBindings { return pBindings(obj(p).val()) }
-func (p path) first() pPathEntry   { return pPathEntry(obj(p).ptr()) }
+func (p path) bindings() pBinding { return pBinding(obj(p).val()) }
+func (p path) first() pPathEntry  { return pPathEntry(obj(p).ptr()) }
 
-func _makePath(bindings pBindings, first pPathEntry, kind int) path {
+func _makePath(bindings pBinding, first pPathEntry, kind int) path {
 	return path(makeObj(int(bindings), ptr(first), kind))
 }
 
@@ -39,7 +39,7 @@ func pathBind(vm *VM, ptr ptr, factory bindFactory) {
 	bindings := factory(sym, false)
 	fmt.Printf("binding path %x %d\n", bindings, sym)
 	if bindings != 0 {
-		pb := pBindings(vm.alloc(cell(bindings)))
+		pb := pBinding(vm.alloc(cell(bindings)))
 		path := _makePath(pb, symPtr, Value(p).Kind())
 		vm.write(ptr, cell(path))
 	}
@@ -47,7 +47,7 @@ func pathBind(vm *VM, ptr ptr, factory bindFactory) {
 
 func getPathExec(vm *VM, val Value) Value {
 	p := path(val)
-	bindings := Value(vm.read(p.bindings()))
+	bindings := Binding(vm.read(ptr(p.bindings())))
 	if bindings == 0 {
 		// fmt.Printf("%016x, %d, %s\n", val, p.sym(), vm.InverseSymbols[w.Sym()])
 		panic("getpath not bound")

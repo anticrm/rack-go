@@ -28,35 +28,38 @@ import (
 
 type Word = obj
 type pWord = pItem
-type bound = imm
-type pBindings = ptr
-type bindFactory func(sym sym, create bool) bound
 
-func _makeWord(sym sym, bindings pBindings, kind int) Word {
+// type Binding imm
+// type pBindings = ptr
+type bindFactory func(sym sym, create bool) Binding
+
+func (v Value) Word() Word { return Word(v) }
+
+func _makeWord(sym sym, bindings pBinding, kind int) Word {
 	return makeObj(int(bindings), ptr(sym), kind)
 }
 
 func (vm *VM) makeWord(sym string) Word {
-	return _makeWord(vm.getSymbolID(sym), 0, WordType)
+	return _makeWord(vm.GetSymbolID(sym), 0, WordType)
 }
 
 func (vm *VM) makeGetWord(sym string) Word {
-	return _makeWord(vm.getSymbolID(sym), 0, GetWordType)
+	return _makeWord(vm.GetSymbolID(sym), 0, GetWordType)
 }
 
 func (vm *VM) makeSetWord(sym string) Word {
-	return _makeWord(vm.getSymbolID(sym), 0, SetWordType)
+	return _makeWord(vm.GetSymbolID(sym), 0, SetWordType)
 }
 
-func (w Word) Sym() sym            { return sym(obj(w).ptr()) }
-func (w Word) bindings() pBindings { return pBindings(obj(w).val()) }
+func (w Word) Sym() sym           { return sym(obj(w).ptr()) }
+func (w Word) bindings() pBinding { return pBinding(obj(w).val()) }
 
 func wordBind(vm *VM, ptr ptr, factory bindFactory) {
 	w := Word(vm.read(ptr))
 	sym := w.Sym()
 	bindings := factory(sym, false)
 	if bindings != 0 {
-		vm.write(ptr, cell(_makeWord(sym, vm.alloc(cell(bindings)), Value(w).Kind())))
+		vm.write(ptr, cell(_makeWord(sym, pBinding(vm.alloc(cell(bindings))), Value(w).Kind())))
 	}
 }
 
@@ -64,7 +67,7 @@ func setWordBind(vm *VM, ptr ptr, factory bindFactory) {
 	w := Word(vm.read(ptr))
 	sym := w.Sym()
 	bindings := factory(sym, true)
-	vm.write(ptr, cell(_makeWord(sym, vm.alloc(cell(bindings)), SetWordType)))
+	vm.write(ptr, cell(_makeWord(sym, pBinding(vm.alloc(cell(bindings))), SetWordType)))
 }
 
 func wordExec(vm *VM, val Value) Value {
@@ -82,10 +85,10 @@ func wordExec(vm *VM, val Value) Value {
 
 func getWordExec(vm *VM, val Value) Value {
 	w := Word(val)
-	bindings := Value(vm.read(w.bindings()))
+	bindings := Binding(vm.read(ptr(w.bindings())))
 	if bindings == 0 {
 		fmt.Printf("%016x, %d, %s\n", val, w.Sym(), vm.InverseSymbols[w.Sym()])
-		panic("getword not bound")
+		panic("word not bound")
 	}
 	bindingKind := bindings.Kind()
 	bound := vm.getBound[bindingKind](bindings)
@@ -97,7 +100,7 @@ func getWordExec(vm *VM, val Value) Value {
 
 func setWordExec(vm *VM, val Value) Value {
 	w := Word(val)
-	bindings := Value(vm.read(w.bindings()))
+	bindings := Binding(vm.read(ptr(w.bindings())))
 	if bindings == 0 {
 		panic("setword not bound")
 	}
@@ -112,7 +115,7 @@ func wordToString(vm *VM, value Value) string {
 	w := Word(value)
 	result.WriteString(vm.InverseSymbols[w.Sym()])
 	result.WriteString("(")
-	result.WriteString(strconv.Itoa(int(vm.read(w.bindings()))))
+	result.WriteString(strconv.Itoa(int(vm.read(ptr(w.bindings())))))
 	result.WriteString(")")
 	return result.String()
 }

@@ -15,23 +15,17 @@
 
 package node
 
-import "github.com/anticrm/rack/yar"
+import (
+	"testing"
 
-func clusterInit(vm *yar.VM) yar.Value {
-	nodes := vm.AllocBlock()
-	nodes.Add(vm, vm.AllocString("localhost:63001"))
-	vm.Dictionary.Put(vm, vm.GetSymbolID("nodes"), nodes.Ptr())
-	return 0
-}
+	"github.com/anticrm/rack/yar"
+)
 
-func clusterPackage() *yar.Pkg {
-	result := yar.NewPackage("cluster")
-	result.AddFunc("init", clusterInit)
-	return result
-}
-
-func loadClusterPackage(vm *yar.VM) {
-	mod := vm.AllocDict()
-	vm.LoadPackage(clusterPackage(), mod)
-	vm.Dictionary.Put(vm, vm.GetSymbolID("cluster"), mod.Ptr())
+func TestClusterInit(t *testing.T) {
+	vm := yar.NewVM(1000, 100)
+	yar.BootVM(vm)
+	loadClusterPackage(vm)
+	code := vm.Parse("cluster/init [\"a\", \"b\"]")
+	result := vm.BindAndExec(code)
+	t.Logf("result: %016x", result)
 }

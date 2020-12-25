@@ -15,28 +15,30 @@
 
 package yar
 
+import "fmt"
+
 func add(vm *VM) Value {
-	x := intValue(vm.Next())
-	y := intValue(vm.Next())
-	return makeInt(x + y)
+	x := vm.Next().Val()
+	y := vm.Next().Val()
+	return MakeInt(x + y).Value()
 }
 
 func sub(vm *VM) Value {
-	x := intValue(vm.Next())
-	y := intValue(vm.Next())
-	return makeInt(x - y)
+	x := vm.Next().Val()
+	y := vm.Next().Val()
+	return MakeInt(x - y).Value()
 }
 
 func gt(vm *VM) Value {
-	x := intValue(vm.Next())
-	y := intValue(vm.Next())
-	return makeBool(x > y)
+	x := vm.Next().Val()
+	y := vm.Next().Val()
+	return MakeBool(x > y).Value()
 }
 
 func blockOfRefinements(vm *VM, code Block) []sym {
 	var result []sym
 
-	for i := code.First(); i != 0; i = i.Next(vm) {
+	for i := code.First(vm); i != 0; i = i.Next(vm) {
 		w := Word(i.Value(vm))
 		result = append(result, w.Sym())
 	}
@@ -47,34 +49,84 @@ func blockOfRefinements(vm *VM, code Block) []sym {
 // type pcAlias = pc
 
 func fn(vm *VM) Value {
-	params := Block(vm.Next())
-	code := Block(vm.Next())
+	params := vm.Next().Block()
+	code := vm.Next().Block()
 
 	defaults := blockOfRefinements(vm, params)
 	stackSize := len(defaults)
 
-	bind(vm, code, func(sym sym, create bool) bound {
+	bind(vm, code, func(sym sym, create bool) Binding {
 		for i, def := range defaults {
 			if def == sym {
-				return makeStackBinding(i - stackSize)
+				return MakeStackBinding(i - stackSize)
 			}
 		}
 		return 0
 	})
 
-	return makeProc(stackSize, ptr(code.First()))
+	return makeProc(stackSize, ptr(code.First(vm)))
 }
 
 func either(vm *VM) Value {
-	cond := vm.Next()
-	ifTrue := Block(vm.Next())
+	cond := vm.Next().Bool()
+	ifTrue := vm.Next().Block()
 	ifFalse := Block(vm.Next())
 
-	if boolValue(cond) {
+	if cond.Val() {
 		return vm.call(ifTrue)
 	}
 
 	return vm.call(ifFalse)
+}
+
+func print(vm *VM) Value {
+	val := vm.Next()
+	fmt.Printf("PRINT: %s\n", vm.toString(val))
+	return val
+}
+
+func _append(vm *VM) Value {
+	// series := vm.Next().Block()
+	// value := vm.Next()
+
+	// series.add(vm, value)
+
+	// var last pBlockEntry
+	// for i := series.First(); i != 0; i = i.Next(vm) {
+	// 	last = i
+	// }
+
+	// if last != 0 {
+
+	// }
+	return 0
+}
+
+func foreach(vm *VM) Value {
+	w := vm.ReadNext().Word()
+	series := vm.Next().Block()
+	code := vm.Next().Block()
+
+	bind(vm, code, func(sym sym, create bool) Binding {
+		if sym == w.Sym() {
+			return MakeStackBinding(-1)
+		}
+		return 0
+	})
+
+	var result Value
+
+	fmt.Printf("series %s\n", vm.toString(series.Value()))
+
+	for i := series.First(vm); i != 0; i = i.Next(vm) {
+		val := i.Value(vm)
+		fmt.Printf("value: %016x\n", val)
+		vm.Push(val)
+		result = vm.call(code)
+		vm.sp = vm.sp - 1
+	}
+
+	return result
 }
 
 func makeObject(vm *VM) Value {
@@ -82,7 +134,7 @@ func makeObject(vm *VM) Value {
 
 	object := vm.AllocDict()
 
-	bind(vm, block, func(sym sym, create bool) bound {
+	bind(vm, block, func(sym sym, create bool) Binding {
 		symValPtr := object.find(vm, sym)
 		if symValPtr == 0 {
 			if create {
@@ -99,16 +151,18 @@ func makeObject(vm *VM) Value {
 	return Value(vm.read(ptr(object)))
 }
 
-var (
-	coreLibrary = map[string]procFunc{
-		"add":         add,
-		"sub":         sub,
-		"gt":          gt,
-		"either":      either,
-		"fn":          fn,
-		"make-object": makeObject,
-	}
-)
+// var (
+// 	coreLibrary = map[string]procFunc{
+// 		"add":         add,
+// 		"sub":         sub,
+// 		"gt":          gt,
+// 		"either":      either,
+// 		"fn":          fn,
+// 		"make-object": makeObject,
+// 		"foreach":     foreach,
+// 		"print":       print,
+// 	}
+// )
 
 func corePackage() *Pkg {
 	result := NewPackage("core")
@@ -118,6 +172,8 @@ func corePackage() *Pkg {
 	result.AddFunc("either", either)
 	result.AddFunc("fn", fn)
 	result.AddFunc("make-object", makeObject)
+	result.AddFunc("foreach", foreach)
+	result.AddFunc("print", print)
 	return result
 }
 

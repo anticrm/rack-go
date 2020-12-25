@@ -38,21 +38,35 @@ const (
 // There are 4 types of cell layouts in the VM: value, obj, item, and ptrval
 
 // VALUE
-//-------------------------
-//  X X X X X X X  | KIND |
-//-------------------------
+//------------------------------
+//       V A L U E      | KIND |
+//------------------------------
 
+// Value represent any value within VM
 type Value cell
 
-// func (v value) val() int        { return int(v >> 32) }
-// func (v value) ptr() ptr        { return ptr(v&0xffffffff) >> 8 }
+// Kind return value type
 func (v Value) Kind() int { return int(v & 0xff) }
 
-// func (v value) immutable() bool { return v.kind()&0x80 != 0 }
+// Val returns embedded value, interpretation depends on value type
+func (v Value) Val() int                { return int(v >> 8) }
+func makeValue(val int, kind int) Value { return Value(val)<<8 | Value(kind) }
 
-// func makeValue(val int, ptr ptr, kind int) value {
-// 	return value(cell(val)<<32 | cell(ptr)<<8 | cell(kind))
-// }
+// BINDING
+//------------------------------
+//       V A L U E      | KIND |
+//------------------------------
+
+// Value represent any value within VM
+type Binding cell
+type pBinding ptr
+
+// Kind return value type
+func (b Binding) Kind() int { return int(b & 0xff) }
+
+// Val returns embedded value, interpretation depends on value type
+func (b Binding) Val() int                  { return int(b >> 8) }
+func makeBinding(val int, kind int) Binding { return Binding(val)<<8 | Binding(kind) }
 
 // OBJ
 //-------------------------
@@ -92,41 +106,46 @@ func (e pItem) setPtr(vm *VM, next ptr) {
 
 // P R I M I T I V E S
 
-type imm = Value
+type imm Value
 
 func makeImm(value int, kind int) imm {
 	return imm(value<<8 | kind)
 }
 
-func makeInt(value int) imm {
-	return makeImm(value, IntegerType)
+func (i imm) Val() int {
+	return int(i >> 8)
 }
 
-func MakeInt(value int) imm {
-	return makeInt(value)
-}
+type integer Value
 
-func makeBool(value bool) imm {
+func MakeInt(value int) integer {
+	return integer(makeValue(value, IntegerType))
+}
+func (i integer) Value() Value { return Value(i) }
+
+type boolean Value
+
+func MakeBool(value bool) boolean {
 	if value {
-		return makeImm(1, BooleanType)
+		return boolean(makeValue(1, BooleanType))
 	}
-	return makeImm(0, BooleanType)
+	return boolean(makeValue(0, BooleanType))
+}
+func (b boolean) Value() Value { return Value(b) }
+func (b boolean) Val() bool    { return b.Value().Val() != 0 }
+func (v Value) Bool() boolean  { return boolean(v) }
+
+type native Value
+
+func makeNative(value int) native {
+	return native(makeValue(value, NativeType))
 }
 
-func intValue(value imm) int {
-	return int(value >> 8)
-}
-
-func boolValue(value imm) bool {
-	return intValue(value) != 0
-}
-
-func makeNative(value int) imm {
-	return makeImm(value, NativeType)
-}
+func (v Value) native() native { return native(v) }
+func (n native) Value() Value  { return Value(n) }
 
 func nativeExec(vm *VM, value Value) Value {
-	i := intValue(value)
+	i := value.Val()
 	f := vm.proc[i]
 	return f(vm)
 }

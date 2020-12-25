@@ -29,6 +29,8 @@ func (vm *VM) AllocDict() pDict {
 	return pDict(vm.alloc(cell(makeDict())))
 }
 
+func (pd pDict) Ptr() ptr { return ptr(pd) }
+
 func (d dict) first() pDictEntry { return pDictEntry(obj(d).ptr()) }
 
 func (p pDictEntry) next(vm *VM) pDictEntry { return pDictEntry(pItem(p).ptr(vm)) }

@@ -20,13 +20,13 @@ import (
 	"strings"
 )
 
-type codeStack []pBlock
+type codeStack []Block
 
-func (s *codeStack) push(code pBlock) {
+func (s *codeStack) push(code Block) {
 	*s = append(*s, code)
 }
 
-func (s *codeStack) pop() pBlock {
+func (s *codeStack) pop() Block {
 	index := len(*s) - 1
 	element := (*s)[index]
 	*s = (*s)[:index]
@@ -46,9 +46,9 @@ func readIdent(s string, i *int) string {
 	return ident.String()
 }
 
-func (vm *VM) Parse(s string) pBlock {
+func (vm *VM) Parse(s string) Block {
 	var stack codeStack
-	result := vm.allocBlock()
+	result := vm.AllocBlock()
 	i := 0
 
 	for i < len(s) {
@@ -59,18 +59,18 @@ func (vm *VM) Parse(s string) pBlock {
 			i++
 			code := result
 			result = stack.pop()
-			result.add(vm, ptr(code))
+			result.Add(vm, code.Value())
 		case '[':
 			i++
 			stack.push(result)
-			result = vm.allocBlock()
+			result = vm.AllocBlock()
 		case '0', '1', '2', '3', '4', '5', '6', '7', '8', '9':
 			val := 0
 			for i < len(s) && isDigit(s[i]) {
 				val = val*10 + int(s[i]-'0')
 				i++
 			}
-			result.add(vm, vm.alloc(cell(makeInt(val))))
+			result.Add(vm, MakeInt(val).Value())
 
 		case '"':
 			var builder strings.Builder
@@ -79,7 +79,7 @@ func (vm *VM) Parse(s string) pBlock {
 				builder.WriteByte(s[i])
 				i++
 			}
-			result.add(vm, vm.alloc(cell(vm.addString(builder.String()))))
+			result.Add(vm, vm.AllocString(builder.String()))
 			i++
 			break
 
@@ -102,20 +102,20 @@ func (vm *VM) Parse(s string) pBlock {
 					i++
 				} else if s[i] == '/' {
 					builder := &pathBuilder{first: 0, last: 0}
-					builder.add(vm, vm.getSymbolID(ident))
+					builder.add(vm, vm.GetSymbolID(ident))
 					i++
 					for i < len(s) {
 						ident = readIdent(s, &i)
-						builder.add(vm, vm.getSymbolID(ident))
+						builder.add(vm, vm.GetSymbolID(ident))
 						if i >= len(s) || s[i] != '/' {
 							break
 						}
 						i++
 					}
 					if kind == GetWordType {
-						result.add(vm, vm.alloc(cell(builder.get(GetPathType))))
+						result.Add(vm, Value(builder.get(GetPathType)))
 					} else if kind == WordType {
-						result.add(vm, vm.alloc(cell(builder.get(PathType))))
+						result.Add(vm, Value(builder.get(PathType)))
 					} else {
 						panic("path not implemented")
 					}
@@ -125,11 +125,11 @@ func (vm *VM) Parse(s string) pBlock {
 
 			switch kind {
 			case WordType:
-				result.add(vm, vm.alloc(cell(vm.makeWord(ident))))
+				result.Add(vm, Value(vm.makeWord(ident)))
 			case GetWordType:
-				result.add(vm, vm.alloc(cell(vm.makeGetWord(ident))))
+				result.Add(vm, Value(vm.makeGetWord(ident)))
 			case SetWordType:
-				result.add(vm, vm.alloc(cell(vm.makeSetWord(ident))))
+				result.Add(vm, Value(vm.makeSetWord(ident)))
 			default:
 				fmt.Printf("kind %v", kind)
 				panic("not implemented other words")

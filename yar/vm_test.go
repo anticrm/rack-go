@@ -21,13 +21,13 @@ import (
 
 func TestBind(t *testing.T) {
 	vm := NewVM(1000, 100)
-	vm.Dictionary.Put(vm, vm.getSymbolID("native"), vm.alloc(cell(vm.addNative(func(vm *VM) Value { return 42 }))))
+	vm.Dictionary.Put(vm, vm.GetSymbolID("native"), vm.alloc(cell(vm.addNative(func(vm *VM) Value { return 42 }))))
 	code := vm.Parse("native [x y]")
-	t.Logf("%s", vm.toString(Value(vm.read(ptr(code)))))
+	t.Logf("%s", vm.toString(code.Value()))
 	vm.dump()
-	vm.bind(Block(vm.read(ptr(code))))
+	vm.bind(code)
 	t.Log("after bindings")
-	t.Logf("%s", vm.toString(Value(vm.read(ptr(code)))))
+	t.Logf("%s", vm.toString(code.Value()))
 	vm.dump()
 }
 
@@ -35,9 +35,8 @@ func TestAdd(t *testing.T) {
 	vm := NewVM(1000, 100)
 	BootVM(vm)
 	code := vm.Parse("add 1 2")
-	c := Block(vm.read(ptr(code)))
-	vm.bind(c)
-	result := vm.call(c)
+	vm.bind(code)
+	result := vm.call(code)
 	t.Logf("result: %016x", result)
 }
 
@@ -45,9 +44,8 @@ func TestAddAdd(t *testing.T) {
 	vm := NewVM(1000, 100)
 	BootVM(vm)
 	code := vm.Parse("add add 1 2 3")
-	c := Block(vm.read(ptr(code)))
-	vm.bind(c)
-	result := vm.call(c)
+	vm.bind(code)
+	result := vm.call(code)
 	t.Logf("result: %016x", result)
 }
 
@@ -55,10 +53,9 @@ func TestFn(t *testing.T) {
 	vm := NewVM(1000, 100)
 	BootVM(vm)
 	code := vm.Parse("x: fn [n] [add n 10] x 5")
-	c := Block(vm.read(ptr(code)))
-	vm.bind(c)
-	t.Logf("%s", vm.toString(Value(c)))
-	result := vm.call(c)
+	vm.bind(code)
+	t.Logf("%s", vm.toString(code.Value()))
+	result := vm.call(code)
 	t.Logf("result: %016x", result)
 }
 
@@ -120,20 +117,18 @@ func TestPath2(t *testing.T) {
 func TestStrings(t *testing.T) {
 	vm := NewVM(1000, 100)
 	BootVM(vm)
-	code := vm.Parse("o: [\"a\", \"b\"]")
+	code := vm.Parse("o: [\"a\" \"b\"]")
 	result := vm.BindAndExec(code)
 	t.Logf("result: %016x", result)
 }
 
-// func TestSave(t *testing.T) {
-// 	vm := NewVM(1000, 100)
-// 	BootVM(vm)
-// 	code := vm.Parse("o: make-object [a: 42 b: make-object [c: 55]] o/b/c")
-// 	result := vm.BindAndExec(code)
-// 	t.Logf("result: %016x", result)
-// 	bytes := vm.Save()
-// 	t.Logf("result: %s", bytes)
-// }
+func TestForeach(t *testing.T) {
+	vm := NewVM(1000, 100)
+	BootVM(vm)
+	code := vm.Parse("foreach val [\"a\" \"b\"] [print val]")
+	result := vm.BindAndExec(code)
+	t.Logf("result: %016x", result)
+}
 
 func TestSave(t *testing.T) {
 	// vm := NewVM(1000, 100)

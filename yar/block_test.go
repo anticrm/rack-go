@@ -21,11 +21,11 @@ import (
 
 func TestBlock(t *testing.T) {
 	vm := NewVM(1000, 100)
-	block := vm.allocBlock()
-	block.add(vm, vm.alloc(cell(makeInt(1))))
-	block.add(vm, vm.alloc(cell(makeInt(2))))
-	block.add(vm, ptr(vm.allocBlock()))
-	block.add(vm, ptr(vm.allocBlock()))
+	block := vm.AllocBlock()
+	block.Add(vm, MakeInt(1).Value())
+	block.Add(vm, MakeInt(2).Value())
+	block.Add(vm, vm.AllocBlock().Value())
+	block.Add(vm, vm.AllocBlock().Value())
 	vm.dump()
 
 	// i := block.first(vm)

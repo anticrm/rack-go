@@ -29,12 +29,12 @@ const (
 	LastBinding  = iota
 )
 
-func makeMapBinding(value ptr) imm {
-	return makeImm(int(value), MapBinding)
+func makeMapBinding(value ptr) Binding {
+	return Binding(makeImm(int(value), MapBinding))
 }
 
-func makeStackBinding(value int) imm {
-	return makeImm(value, StackBinding)
+func MakeStackBinding(value int) Binding {
+	return Binding(makeImm(value, StackBinding))
 }
 
 type sym = uint
@@ -61,8 +61,8 @@ type VM struct {
 	toStringFunc [LastType]func(vm *VM, value Value) string
 	bindFunc     []func(vm *VM, ptr ptr, factory bindFactory)
 	execFunc     []func(vm *VM, value Value) Value
-	getBound     [LastBinding]func(bindings imm) Value
-	setBound     [LastBinding]func(bindings imm, value Value)
+	getBound     [LastBinding]func(bindings Binding) Value
+	setBound     [LastBinding]func(bindings Binding, value Value)
 }
 
 func notImplemented(vm *VM, value Value) string {
@@ -100,22 +100,22 @@ func (vm *VM) initBindings() {
 	vm.execFunc = execFunc
 	vm.bindFunc = bindFunc
 
-	vm.getBound[MapBinding] = func(binding imm) Value {
-		symValPtr := intValue(binding)
+	vm.getBound[MapBinding] = func(binding Binding) Value {
+		symValPtr := binding.Val()
 		symVal := symval(vm.read(ptr(symValPtr)))
 		symValValPtr := symVal.val()
 		return Value(vm.read(symValValPtr))
 	}
 
-	vm.setBound[MapBinding] = func(binding imm, value Value) {
-		symValPtr := ptr(intValue(binding))
+	vm.setBound[MapBinding] = func(binding Binding, value Value) {
+		symValPtr := ptr(binding.Val())
 		symVal := symval(vm.read(symValPtr))
 		p := vm.alloc(cell(value))
 		vm.write(symValPtr, cell(makeSymval(symVal.sym(), p)))
 	}
 
-	vm.getBound[StackBinding] = func(binding imm) Value {
-		offset := intValue(binding)
+	vm.getBound[StackBinding] = func(binding Binding) Value {
+		offset := binding.Val()
 		return Value(vm.stack[int(vm.sp)+offset])
 	}
 }
@@ -169,7 +169,7 @@ func (vm *VM) dump() {
 	}
 }
 
-func (vm *VM) getSymbolID(sym string) uint {
+func (vm *VM) GetSymbolID(sym string) uint {
 	id, ok := vm.symbols[sym]
 	if !ok {
 		vm.nextSymbol++
@@ -180,17 +180,17 @@ func (vm *VM) getSymbolID(sym string) uint {
 	return id
 }
 
-func (vm *VM) addString(str string) Value {
+func (vm *VM) AllocString(str string) Value {
 	vm.nextString++
 	id := vm.nextString
 	vm.strings[id] = str
-	return makeString(int(id))
+	return Value(makeString(int(id)))
 }
 
 func (vm *VM) addNative(f procFunc) Value {
 	id := len(vm.proc)
 	vm.proc = append(vm.proc, f)
-	return makeNative(id)
+	return makeNative(id).Value()
 }
 
 func (vm *VM) toString(value Value) string {
@@ -201,7 +201,7 @@ func (vm *VM) toString(value Value) string {
 // B I N D I N G S
 
 func bind(vm *VM, block Block, factory bindFactory) {
-	for i := block.First(); i != 0; i = i.Next(vm) {
+	for i := block.First(vm); i != 0; i = i.Next(vm) {
 		ptr := i.pval(vm)
 		obj := Value(vm.read(ptr))
 		kind := obj.Kind()
@@ -210,7 +210,7 @@ func bind(vm *VM, block Block, factory bindFactory) {
 }
 
 func (vm *VM) bind(block Block) {
-	bind(vm, block, func(sym sym, create bool) bound {
+	bind(vm, block, func(sym sym, create bool) Binding {
 		symValPtr := vm.Dictionary.find(vm, sym)
 		if symValPtr == 0 {
 			if create {
@@ -230,7 +230,7 @@ func (vm *VM) bind(block Block) {
 
 func (vm *VM) call(block Block) Value {
 	pc := vm.pc
-	vm.pc = block.First()
+	vm.pc = block.First(vm)
 	var result Value
 	for vm.pc != 0 {
 		result = vm.Next()
@@ -250,8 +250,8 @@ func (vm *VM) Exec(first pBlockEntry) Value {
 	return result
 }
 
-func (vm *VM) BindAndExec(code pBlock) Value {
-	block := Block(vm.read(ptr(code)))
+func (vm *VM) BindAndExec(block Block) Value {
+	// block := Block(vm.read(ptr(code)))
 	vm.bind(block)
 	return vm.call(block)
 }
@@ -264,6 +264,14 @@ func (vm *VM) nextNoInfix() Value {
 	result := vm.execFunc[kind](vm, value)
 	vm.result = result
 	return result
+}
+
+func (vm *VM) ReadNext() Value {
+	entry := blockEntry(vm.read(ptr(vm.pc)))
+	value := Value(vm.read(entry.pval()))
+	vm.pc = entry.next()
+	vm.result = value
+	return value
 }
 
 func (vm *VM) Next() Value {
@@ -305,7 +313,7 @@ func (p *Pkg) AddFunc(name string, fn procFunc) {
 func (vm *VM) LoadPackage(pkg *Pkg, dict pDict) {
 	for name, fn := range pkg.fn {
 		native := vm.addNative(fn)
-		sym := sym(vm.getSymbolID(name))
+		sym := sym(vm.GetSymbolID(name))
 		dict.Put(vm, sym, vm.alloc(cell(native)))
 		vm.procNames = append(vm.procNames, pkg.name+"/"+name)
 	}
