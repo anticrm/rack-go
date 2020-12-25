@@ -100,7 +100,7 @@ func blockToString(vm *VM, b Value) string {
 	block := Block(b)
 	for i := block.First(vm); i != 0; i = i.Next(vm) {
 		value := i.Value(vm)
-		result.WriteString(vm.toString(value))
+		result.WriteString(vm.ToString(value))
 		result.WriteByte(' ')
 	}
 

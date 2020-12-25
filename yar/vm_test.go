@@ -23,12 +23,12 @@ func TestBind(t *testing.T) {
 	vm := NewVM(1000, 100)
 	vm.Dictionary.Put(vm, vm.GetSymbolID("native"), vm.addNative(func(vm *VM) Value { return 42 }))
 	code := vm.Parse("native [x y]")
-	t.Logf("%s", vm.toString(code.Value()))
-	vm.dump()
+	t.Logf("%s", vm.ToString(code.Value()))
+	vm.Dump()
 	vm.bind(code)
 	t.Log("after bindings")
-	t.Logf("%s", vm.toString(code.Value()))
-	vm.dump()
+	t.Logf("%s", vm.ToString(code.Value()))
+	vm.Dump()
 }
 
 func TestAdd(t *testing.T) {
@@ -54,7 +54,7 @@ func TestFn(t *testing.T) {
 	BootVM(vm)
 	code := vm.Parse("x: fn [n] [add n 10] x 5")
 	vm.bind(code)
-	t.Logf("%s", vm.toString(code.Value()))
+	t.Logf("%s", vm.ToString(code.Value()))
 	result := vm.call(code)
 	t.Logf("result: %016x", result)
 }

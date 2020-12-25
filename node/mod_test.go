@@ -29,4 +29,5 @@ func TestClusterInit(t *testing.T) {
 	code := vm.Parse("cluster/init cluster/docker-service")
 	result := vm.BindAndExec(code)
 	t.Logf("result: %016x", result)
+	vm.Dump()
 }

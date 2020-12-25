@@ -32,14 +32,15 @@ type StateMachine struct {
 	VM        *yar.VM
 }
 
-func NewStateMachine(clusterID uint64,
-	nodeID uint64) sm.IStateMachine {
+func NewStateMachine(clusterID uint64, nodeID uint64) sm.IStateMachine {
 	sm := &StateMachine{
 		ClusterID: clusterID,
 		NodeID:    nodeID,
 		VM:        yar.NewVM(65536, 100),
 	}
 	yar.BootVM(sm.VM)
+	sm.VM.Library.Add(clusterPackage())
+	clusterModule(sm.VM)
 	return sm
 }
 
@@ -54,8 +55,10 @@ func (s *StateMachine) Lookup(query interface{}) (interface{}, error) {
 
 // Update updates the object using the specified committed raft entry.
 func (s *StateMachine) Update(data []byte) (sm.Result, error) {
-	fmt.Printf("from ExampleStateMachine.Update(), msg: %s\n",
-		string(data))
+	fmt.Printf("> %s\n", string(data))
+	code := s.VM.Parse(string(data))
+	result := s.VM.BindAndExec(code)
+	fmt.Printf("%s\n", s.VM.ToString(result))
 	return sm.Result{Value: uint64(len(data))}, nil
 }
 

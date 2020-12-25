@@ -91,6 +91,7 @@ func NewVM(memSize int, stackSize int) *VM {
 	vm.toStringFunc[WordType] = wordToString
 	vm.toStringFunc[MapType] = dictToString
 	vm.toStringFunc[IntegerType] = intToString
+	vm.toStringFunc[StringType] = stringToString
 
 	vm.Dictionary = vm.AllocDict()
 	vm.initBindings()
@@ -171,7 +172,7 @@ func (vm *VM) pop() Value {
 	return vm.stack[vm.sp]
 }
 
-func (vm *VM) dump() {
+func (vm *VM) Dump() {
 	for i := 0; i <= int(vm.top); i++ {
 		fmt.Printf("%016x\n", vm.mem[i])
 	}
@@ -200,7 +201,7 @@ func (vm *VM) addNative(f procFunc) Value {
 	return makeNative(id).Value()
 }
 
-func (vm *VM) toString(value Value) string {
+func (vm *VM) ToString(value Value) string {
 	kind := value.Kind()
 	return vm.toStringFunc[kind](vm, value)
 }

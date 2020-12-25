@@ -118,5 +118,5 @@ func dictToString(vm *VM, b Value) string {
 func symvalToString(vm *VM, sv pSymval) string {
 	val := vm.read(ptr(sv.val(vm)))
 	sym := sv.sym(vm)
-	return vm.InverseSymbols[sym] + "(" + strconv.Itoa(int(sym)) + ")" + ": " + vm.toString(Value(val))
+	return vm.InverseSymbols[sym] + "(" + strconv.Itoa(int(sym)) + ")" + ": " + vm.ToString(Value(val))
 }

@@ -123,7 +123,8 @@ type integer Value
 func MakeInt(value int) integer {
 	return integer(makeValue(value, IntegerType))
 }
-func (i integer) Value() Value { return Value(i) }
+func (i integer) Value() Value   { return Value(i) }
+func (v Value) Integer() integer { return integer(v) }
 
 func intToString(vm *VM, b Value) string {
 	return strconv.Itoa(b.Val())

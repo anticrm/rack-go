@@ -81,7 +81,7 @@ func either(vm *VM) Value {
 
 func print(vm *VM) Value {
 	val := vm.Next()
-	fmt.Printf("PRINT: %s\n", vm.toString(val))
+	fmt.Printf("PRINT: %s\n", vm.ToString(val))
 	return val
 }
 
@@ -108,12 +108,35 @@ func foreach(vm *VM) Value {
 
 	var result Value
 
-	fmt.Printf("series %s\n", vm.toString(series.Value()))
+	// fmt.Printf("series %s\n", vm.toString(series.Value()))
 
 	for i := series.First(vm); i != 0; i = i.Next(vm) {
 		val := i.Value(vm)
-		fmt.Printf("value: %016x\n", val)
+		// fmt.Printf("value: %016x\n", val)
 		vm.Push(val)
+		result = vm.call(code)
+		vm.sp = vm.sp - 1
+	}
+
+	return result
+}
+
+func repeat(vm *VM) Value {
+	w := vm.ReadNext().Word()
+	times := vm.Next().Integer().Value().Val()
+	code := vm.Next().Block()
+
+	bind(vm, code, func(sym sym, create bool) Binding {
+		if sym == w.Sym() {
+			return MakeStackBinding(-1)
+		}
+		return 0
+	})
+
+	var result Value
+
+	for i := 0; i < times; i++ {
+		vm.Push(MakeInt(i).Value())
 		result = vm.call(code)
 		vm.sp = vm.sp - 1
 	}
@@ -141,24 +164,6 @@ func makeObject(vm *VM) Value {
 	return object.Value()
 }
 
-// func get(vm *VM) Value {
-// 	w := vm.Next().Word()
-// 	vm.bindFunc[GetWordType](vm, )
-// }
-
-// var (
-// 	coreLibrary = map[string]procFunc{
-// 		"add":         add,
-// 		"sub":         sub,
-// 		"gt":          gt,
-// 		"either":      either,
-// 		"fn":          fn,
-// 		"make-object": makeObject,
-// 		"foreach":     foreach,
-// 		"print":       print,
-// 	}
-// )
-
 func CorePackage() *Pkg {
 	result := NewPackage("core")
 	result.AddFunc("add", add)
@@ -170,7 +175,7 @@ func CorePackage() *Pkg {
 	result.AddFunc("foreach", foreach)
 	result.AddFunc("print", print)
 	result.AddFunc("append", _append)
-	result.AddFunc("load-native", loadNative)
+	result.AddFunc("repeat", repeat)
 	return result
 }
 
@@ -184,6 +189,7 @@ make-object: load-native "core/make-object"
 foreach: load-native "core/foreach"
 print: load-native "core/print"
 append: load-native "core/append"
+repeat: load-native "core/repeat"
 `
 
 func CoreModule(vm *VM) Value {

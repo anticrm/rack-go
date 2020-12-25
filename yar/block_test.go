@@ -26,7 +26,7 @@ func TestBlock(t *testing.T) {
 	block.Add(vm, MakeInt(2).Value())
 	block.Add(vm, vm.AllocBlock().Value())
 	block.Add(vm, vm.AllocBlock().Value())
-	vm.dump()
+	vm.Dump()
 
 	// i := block.first(vm)
 	// if i.value(vm) != 0x180 {

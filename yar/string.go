@@ -28,3 +28,7 @@ func (vm *VM) AllocString(str string) String {
 	vm.strings[id] = str
 	return String(makeValue(int(id), StringType))
 }
+
+func stringToString(vm *VM, b Value) string {
+	return "\"" + vm.strings[uint(b.Val())] + "\""
+}

@@ -20,5 +20,5 @@ import "testing"
 func TestParse(t *testing.T) {
 	vm := NewVM(1000, 100)
 	vm.Parse("add 1 2")
-	vm.dump()
+	vm.Dump()
 }

@@ -23,5 +23,5 @@ func TestBoot(t *testing.T) {
 	vm := NewVM(1000, 100)
 	vm.Library.Add(CorePackage())
 	CoreModule(vm)
-	vm.dump()
+	vm.Dump()
 }
