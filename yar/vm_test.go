@@ -93,7 +93,7 @@ func TestFork(t *testing.T) {
 func TestMakeObject(t *testing.T) {
 	vm := NewVM(1000, 100)
 	BootVM(vm)
-	code := vm.Parse("o: make-object [a: 1 b: 2]")
+	code := vm.Parse("o: make-object [a: 1 b: 2 c: add 5 5] o/c")
 	result := vm.BindAndExec(code)
 	t.Logf("result: %016x", result)
 }

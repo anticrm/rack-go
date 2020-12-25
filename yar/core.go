@@ -122,16 +122,14 @@ func foreach(vm *VM) Value {
 }
 
 func makeObject(vm *VM) Value {
-	block := Block(vm.Next())
+	block := vm.Next().Block()
 
 	object := vm.AllocDict()
-
 	bind(vm, block, func(sym sym, create bool) Binding {
 		symValPtr := object.Find(vm, sym)
 		if symValPtr == 0 {
 			if create {
 				symValPtr = object.Put(vm, sym, 0)
-				// symValPtr = object.Find(vm, sym) // TODO: fix this garbage
 			} else {
 				return 0
 			}
@@ -161,7 +159,7 @@ func makeObject(vm *VM) Value {
 // 	}
 // )
 
-func corePackage() *Pkg {
+func CorePackage() *Pkg {
 	result := NewPackage("core")
 	result.AddFunc("add", add)
 	result.AddFunc("sub", sub)
@@ -172,9 +170,28 @@ func corePackage() *Pkg {
 	result.AddFunc("foreach", foreach)
 	result.AddFunc("print", print)
 	result.AddFunc("append", _append)
+	result.AddFunc("load-native", loadNative)
 	return result
 }
 
+const coreY = `
+add: load-native "core/add"
+sub: load-native "core/sub"
+gt: load-native "core/gt"
+either: load-native "core/either"
+fn: load-native "core/fn"
+make-object: load-native "core/make-object"
+foreach: load-native "core/foreach"
+print: load-native "core/print"
+append: load-native "core/append"
+`
+
+func CoreModule(vm *VM) Value {
+	code := vm.Parse(coreY)
+	return vm.BindAndExec(code)
+}
+
 func BootVM(vm *VM) {
-	vm.LoadPackage(corePackage(), vm.Dictionary)
+	vm.Library.Add(CorePackage())
+	CoreModule(vm)
 }

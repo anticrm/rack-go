@@ -14,3 +14,17 @@
 //
 
 package yar
+
+type String Value
+
+func (v Value) String() String { return String(v) }
+
+func (s String) Value() Value         { return Value(s) }
+func (s String) String(vm *VM) string { return vm.strings[uint(s.Value().Val())] }
+
+func (vm *VM) AllocString(str string) String {
+	vm.nextString++
+	id := vm.nextString
+	vm.strings[id] = str
+	return String(makeValue(int(id), StringType))
+}

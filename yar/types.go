@@ -15,6 +15,8 @@
 
 package yar
 
+import "strconv"
+
 type ptr uint
 type cell int64
 
@@ -123,6 +125,10 @@ func MakeInt(value int) integer {
 }
 func (i integer) Value() Value { return Value(i) }
 
+func intToString(vm *VM, b Value) string {
+	return strconv.Itoa(b.Val())
+}
+
 type boolean Value
 
 func MakeBool(value bool) boolean {
@@ -152,6 +158,8 @@ func nativeExec(vm *VM, value Value) Value {
 
 ///
 
+///
+
 type Proc obj
 
 func makeProc(stackSize int, code ptr) Value {
@@ -175,10 +183,6 @@ func procExec(vm *VM, value Value) Value {
 
 ///
 
-func makeString(value int) imm {
-	return makeImm(value, StringType)
-}
-
 // V M T
 
 func identity(vm *VM, value Value) Value                          { return value }
@@ -198,7 +202,7 @@ var (
 		identity, // bool
 		nativeExec,
 		procExec,
-		getPathExec,
+		pathExec,
 		getPathExec,
 		identity,
 	}

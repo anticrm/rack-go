@@ -53,7 +53,7 @@ func (vm *VM) Parse(s string) Block {
 
 	for i < len(s) {
 		switch s[i] {
-		case ' ', '\n':
+		case ' ', '\n', '\r', '\t':
 			i++
 		case ']':
 			i++
@@ -79,7 +79,7 @@ func (vm *VM) Parse(s string) Block {
 				builder.WriteByte(s[i])
 				i++
 			}
-			result.Add(vm, vm.AllocString(builder.String()))
+			result.Add(vm, vm.AllocString(builder.String()).Value())
 			i++
 			break
 

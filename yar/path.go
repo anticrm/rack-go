@@ -16,7 +16,6 @@
 package yar
 
 import (
-	"fmt"
 	"strings"
 )
 
@@ -67,8 +66,8 @@ func getPathExec(vm *VM, val Value) Value {
 		panic("getpath not bound")
 	}
 	bindingKind := bindings.Kind()
-	bound := dict(vm.getBound[bindingKind](bindings))
-	fmt.Printf("bound %x\n", bound)
+	bound := vm.getBound[bindingKind](bindings).Dict()
+	// fmt.Printf("bound %s\n", vm.toString(bound.Value()))
 
 	fl := firstLast(vm.read(ptr(p.firstLast())))
 	first := fl.first()
@@ -76,10 +75,10 @@ func getPathExec(vm *VM, val Value) Value {
 
 	for i != 0 {
 		sym := sym(i.pval(vm))
-		// dict := pDict(bound.val())
-		// fmt.Printf("@ %x\n", dict)
-		// fmt.Printf("dict %s\n", vm.toString(Value(vm.read(ptr(dict)))))
-		sv := symval(vm.read(ptr(bound.Find(vm, sym))))
+		// fmt.Printf("looking for sym: %s\n", vm.InverseSymbols[sym])
+		psv := bound.Find(vm, sym)
+		sv := symval(vm.read(ptr(psv)))
+		// fmt.Printf("BOUND: %016x\n", psv)
 		bound = dict(vm.read(sv.val()))
 		i = i.Next(vm)
 	}
@@ -88,6 +87,12 @@ func getPathExec(vm *VM, val Value) Value {
 	// 	fmt.Printf(" // %s\n", vm.toString(bound))
 	// }
 	return Value(bound)
+}
+
+func pathExec(vm *VM, val Value) Value {
+	bound := getPathExec(vm, val)
+	return vm.execFunc[bound.Kind()](vm, bound)
+	// return getPathExec(vm, val)
 }
 
 // func (b pathEntry) next() pPathEntry { return pPathEntry(obj(b).ptr()) }

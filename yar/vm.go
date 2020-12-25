@@ -56,6 +56,7 @@ type VM struct {
 	InverseSymbols map[sym]string
 	strings        map[uint]string
 	nextString     uint
+	Library        Library
 	Services       map[string]interface{}
 
 	toStringFunc [LastType]func(vm *VM, value Value) string
@@ -88,9 +89,16 @@ func NewVM(memSize int, stackSize int) *VM {
 	}
 	vm.toStringFunc[BlockType] = blockToString
 	vm.toStringFunc[WordType] = wordToString
+	vm.toStringFunc[MapType] = dictToString
+	vm.toStringFunc[IntegerType] = intToString
 
 	vm.Dictionary = vm.AllocDict()
 	vm.initBindings()
+
+	loadNative := vm.addNative(loadNative)
+	sym := sym(vm.GetSymbolID("load-native"))
+	vm.Dictionary.Put(vm, sym, loadNative)
+	vm.procNames = append(vm.procNames, "boot/load-native")
 
 	return vm
 }
@@ -180,11 +188,10 @@ func (vm *VM) GetSymbolID(sym string) uint {
 	return id
 }
 
-func (vm *VM) AllocString(str string) Value {
-	vm.nextString++
-	id := vm.nextString
-	vm.strings[id] = str
-	return Value(makeString(int(id)))
+func loadNative(vm *VM) Value {
+	name := vm.Next().String().String(vm)
+	f := vm.Library.getFunction(name)
+	return vm.addNative(f)
 }
 
 func (vm *VM) addNative(f procFunc) Value {
@@ -283,6 +290,10 @@ type Pkg struct {
 
 type Library struct {
 	packages []*Pkg
+}
+
+func (l *Library) Add(pkg *Pkg) {
+	l.packages = append(l.packages, pkg)
 }
 
 func (l *Library) getFunction(name string) procFunc {

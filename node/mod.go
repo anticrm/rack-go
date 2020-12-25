@@ -18,9 +18,9 @@ package node
 import "github.com/anticrm/rack/yar"
 
 func clusterInit(vm *yar.VM) yar.Value {
-	nodes := vm.AllocBlock()
-	nodes.Add(vm, vm.AllocString("localhost:63001"))
-	vm.Dictionary.Put(vm, vm.GetSymbolID("nodes"), nodes.Value())
+	// nodes := vm.Dictionary.Find(vm, vm.GetSymbolID("cluster"))
+	// nodes.Add(vm, vm.AllocString("localhost:63001").Value())
+	// vm.Dictionary.Put(vm, vm.GetSymbolID("nodes"), nodes.Value())
 	return 0
 }
 
@@ -30,8 +30,15 @@ func clusterPackage() *yar.Pkg {
 	return result
 }
 
-func loadClusterPackage(vm *yar.VM) {
-	mod := vm.AllocDict()
-	vm.LoadPackage(clusterPackage(), mod)
-	vm.Dictionary.Put(vm, vm.GetSymbolID("cluster"), mod.Value())
+const clusterY = `
+cluster: make-object [
+	nodes: []
+	init: fn [] [append nodes 1]
+	docker-service: fn [] [print nodes]
+]
+`
+
+func clusterModule(vm *yar.VM) yar.Value {
+	code := vm.Parse(clusterY)
+	return vm.BindAndExec(code)
 }

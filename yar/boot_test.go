@@ -21,6 +21,7 @@ import (
 
 func TestBoot(t *testing.T) {
 	vm := NewVM(1000, 100)
-	BootVM(vm)
+	vm.Library.Add(CorePackage())
+	CoreModule(vm)
 	vm.dump()
 }

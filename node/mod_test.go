@@ -24,8 +24,9 @@ import (
 func TestClusterInit(t *testing.T) {
 	vm := yar.NewVM(1000, 100)
 	yar.BootVM(vm)
-	loadClusterPackage(vm)
-	code := vm.Parse("cluster/init [\"a\", \"b\"]")
+	vm.Library.Add(clusterPackage())
+	clusterModule(vm)
+	code := vm.Parse("cluster/init cluster/docker-service")
 	result := vm.BindAndExec(code)
 	t.Logf("result: %016x", result)
 }

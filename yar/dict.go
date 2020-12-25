@@ -15,6 +15,12 @@
 
 package yar
 
+import (
+	"fmt"
+	"strconv"
+	"strings"
+)
+
 type dict Value
 type dictFirst cell
 type pDictFirst ptr
@@ -34,6 +40,7 @@ func (d dict) Put(vm *VM, sym sym, value Value) pSymval { return d.dictFirst().p
 func (d dict) Find(vm *VM, sym sym) pSymval             { return d.dictFirst().find(vm, sym) }
 func (d dict) Value() Value                             { return Value(d) }
 func (d dict) dictFirst() pDictFirst                    { return pDictFirst(d.Value().Val()) }
+func (v Value) Dict() dict                              { return dict(v) }
 
 func (d dictFirst) first() pDictEntry { return pDictEntry(obj(d).ptr()) }
 
@@ -41,6 +48,7 @@ func (p pDictEntry) next(vm *VM) pDictEntry { return pDictEntry(pItem(p).ptr(vm)
 func (p pDictEntry) symval(vm *VM) pSymval  { return pSymval(pItem(p).val(vm)) }
 
 func (p pSymval) sym(vm *VM) sym           { return sym(pItem(p).ptr(vm)) }
+func (p pSymval) val(vm *VM) int           { return pItem(p).val(vm) }
 func (p pSymval) setPtr(vm *VM, value ptr) { pItem(p).setPtr(vm, value) }
 
 func makeSymval(sym sym, value ptr) symval { return symval(makeItem(int(value), ptr(sym))) }
@@ -86,12 +94,29 @@ func (pd pDictFirst) find(vm *VM, sym sym) pSymval {
 	return 0
 }
 
-// func (d dictFirst) find(vm *VM, sym sym) pSymval {
-// 	for i := d.first(); i != 0; i = i.next(vm) {
-// 		sv := i.symval(vm)
-// 		if sv.sym(vm) == sym {
-// 			return sv
-// 		}
-// 	}
-// 	return 0
-// }
+func dictToString(vm *VM, b Value) string {
+	var result strings.Builder
+	result.WriteString(fmt.Sprintf(" #%016x ", b))
+	result.WriteByte('[')
+
+	dict := b.Dict()
+	first := dict.dictFirst()
+	d := dictFirst(vm.read(ptr(first)))
+	for i := d.first(); i != 0; i = i.next(vm) {
+		sv := i.symval(vm)
+		result.WriteString(symvalToString(vm, sv))
+		// result.WriteString(vm.InverseSymbols[sv.sym(vm)])
+		// result.WriteString(": ")
+		// val := vm.read(ptr(sv.val(vm)))
+		// result.WriteString(vm.toString(Value(val)))
+	}
+
+	result.WriteByte(']')
+	return result.String()
+}
+
+func symvalToString(vm *VM, sv pSymval) string {
+	val := vm.read(ptr(sv.val(vm)))
+	sym := sv.sym(vm)
+	return vm.InverseSymbols[sym] + "(" + strconv.Itoa(int(sym)) + ")" + ": " + vm.toString(Value(val))
+}
