@@ -28,7 +28,7 @@ func expose(vm *yar.VM) yar.Value {
 
 	var extractors []func(r *http.Request) yar.Value
 
-	for i := params.First(); i != 0; i = i.Next(vm) {
+	for i := params.First(vm); i != 0; i = i.Next(vm) {
 		value := i.Value(vm)
 		switch value.Kind() {
 		case yar.WordType:
@@ -36,7 +36,7 @@ func expose(vm *yar.VM) yar.Value {
 			symbol := vm.InverseSymbols[word.Sym()]
 			extractor := func(r *http.Request) yar.Value {
 				val := r.URL.Query().Get(symbol)
-				return yar.MakeInt(len(val))
+				return yar.MakeInt(len(val)).Value()
 			}
 			extractors = append(extractors, extractor)
 		default:
