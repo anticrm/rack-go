@@ -56,8 +56,8 @@ func (b pBlockEntry) Value(vm *VM) Value      { return Value(vm.read(b.pval(vm))
 // 	return ptrval.ptr(), true
 // }
 
-func blockBind(vm *VM, ptr ptr, factory bindFactory) {
-	bind(vm, Block(vm.read(ptr)), factory)
+func blockBind(vm *VM, value Value, factory bindFactory) {
+	bind(vm, value.Block(), factory)
 }
 
 func makeFirstLast(first pBlockEntry, last pBlockEntry) Value {
@@ -84,9 +84,12 @@ func (b pFirstLast) addEntry(vm *VM, newLast pBlockEntry) {
 	}
 }
 
-func (b pFirstLast) add(vm *VM, value Value) {
-	ptr := vm.alloc(cell(value))
+func (b pFirstLast) addPtr(vm *VM, ptr ptr) {
 	b.addEntry(vm, pBlockEntry(vm.alloc(cell(makeItem(int(ptr), 0)))))
+}
+
+func (b pFirstLast) add(vm *VM, value Value) {
+	b.addPtr(vm, vm.alloc(cell(value)))
 }
 
 func blockToString(vm *VM, b Value) string {

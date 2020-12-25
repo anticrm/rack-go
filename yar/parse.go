@@ -101,35 +101,38 @@ func (vm *VM) Parse(s string) Block {
 					kind = SetWordType
 					i++
 				} else if s[i] == '/' {
-					builder := &pathBuilder{first: 0, last: 0}
-					builder.add(vm, vm.GetSymbolID(ident))
+					var path path
+
+					if kind == GetWordType {
+						path = vm.AllocGetPath()
+					} else if kind == WordType {
+						path = vm.AllocPath()
+					} else {
+						panic("path not implemented")
+					}
+
+					path.Add(vm, vm.GetSymbolID(ident))
 					i++
 					for i < len(s) {
 						ident = readIdent(s, &i)
-						builder.add(vm, vm.GetSymbolID(ident))
+						path.Add(vm, vm.GetSymbolID(ident))
 						if i >= len(s) || s[i] != '/' {
 							break
 						}
 						i++
 					}
-					if kind == GetWordType {
-						result.Add(vm, Value(builder.get(GetPathType)))
-					} else if kind == WordType {
-						result.Add(vm, Value(builder.get(PathType)))
-					} else {
-						panic("path not implemented")
-					}
+					result.Add(vm, path.Value())
 					break
 				}
 			}
 
 			switch kind {
 			case WordType:
-				result.Add(vm, Value(vm.makeWord(ident)))
+				result.Add(vm, vm.AllocWord(vm.GetSymbolID(ident)).Value())
 			case GetWordType:
-				result.Add(vm, Value(vm.makeGetWord(ident)))
+				result.Add(vm, vm.AllocGetWord(vm.GetSymbolID(ident)).Value())
 			case SetWordType:
-				result.Add(vm, Value(vm.makeSetWord(ident)))
+				result.Add(vm, vm.AllocSetWord(vm.GetSymbolID(ident)).Value())
 			default:
 				fmt.Printf("kind %v", kind)
 				panic("not implemented other words")

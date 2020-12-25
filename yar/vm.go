@@ -59,7 +59,7 @@ type VM struct {
 	Services       map[string]interface{}
 
 	toStringFunc [LastType]func(vm *VM, value Value) string
-	bindFunc     []func(vm *VM, ptr ptr, factory bindFactory)
+	bindFunc     []func(vm *VM, value Value, factory bindFactory)
 	execFunc     []func(vm *VM, value Value) Value
 	getBound     [LastBinding]func(bindings Binding) Value
 	setBound     [LastBinding]func(bindings Binding, value Value)
@@ -202,10 +202,8 @@ func (vm *VM) toString(value Value) string {
 
 func bind(vm *VM, block Block, factory bindFactory) {
 	for i := block.First(vm); i != 0; i = i.Next(vm) {
-		ptr := i.pval(vm)
-		obj := Value(vm.read(ptr))
-		kind := obj.Kind()
-		vm.bindFunc[kind](vm, ptr, factory)
+		value := i.Value(vm)
+		vm.bindFunc[value.Kind()](vm, value, factory)
 	}
 }
 

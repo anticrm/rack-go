@@ -21,32 +21,46 @@ import (
 )
 
 type path obj
-type pathEntry obj
-type pPathEntry ptr
 
-func (p path) bindings() pBinding { return pBinding(obj(p).val()) }
-func (p path) first() pPathEntry  { return pPathEntry(obj(p).ptr()) }
+// type pathEntry obj
+// type pPathEntry ptr
 
-func _makePath(bindings pBinding, first pPathEntry, kind int) path {
-	return path(makeObj(int(bindings), ptr(first), kind))
+func (p path) bindings() pBinding    { return pBinding(obj(p).val()) }
+func (p path) firstLast() pFirstLast { return pFirstLast(obj(p).ptr()) }
+func (p path) Add(vm *VM, sym sym)   { p.firstLast().addPtr(vm, ptr(sym)) }
+func (p path) Value() Value          { return Value(p) }
+
+func (v Value) Path() path { return path(v) }
+
+func _makePath(bindings pBinding, firstLast pFirstLast, kind int) path {
+	return path(makeObj(int(bindings), ptr(firstLast), kind))
 }
 
-func pathBind(vm *VM, ptr ptr, factory bindFactory) {
-	p := path(vm.read(ptr))
-	fmt.Printf("path %016x\n", p)
-	symPtr := p.first()
-	sym := symPtr.sym(vm)
+func (vm *VM) AllocPath() path {
+	bindings := pBinding(vm.alloc(0))
+	firstlast := pFirstLast(vm.alloc(0))
+	return _makePath(bindings, firstlast, PathType)
+}
+
+func (vm *VM) AllocGetPath() path {
+	bindings := pBinding(vm.alloc(0))
+	firstlast := pFirstLast(vm.alloc(0))
+	return _makePath(bindings, firstlast, GetPathType)
+}
+
+func pathBind(vm *VM, value Value, factory bindFactory) {
+	p := value.Path()
+	fl := firstLast(vm.read(ptr(p.firstLast())))
+	first := fl.first()
+	sym := sym(first.pval(vm))
 	bindings := factory(sym, false)
-	fmt.Printf("binding path %x %d\n", bindings, sym)
 	if bindings != 0 {
-		pb := pBinding(vm.alloc(cell(bindings)))
-		path := _makePath(pb, symPtr, Value(p).Kind())
-		vm.write(ptr, cell(path))
+		vm.write(ptr(p.bindings()), cell(bindings))
 	}
 }
 
 func getPathExec(vm *VM, val Value) Value {
-	p := path(val)
+	p := val.Path()
 	bindings := Binding(vm.read(ptr(p.bindings())))
 	if bindings == 0 {
 		// fmt.Printf("%016x, %d, %s\n", val, p.sym(), vm.InverseSymbols[w.Sym()])
@@ -56,11 +70,12 @@ func getPathExec(vm *VM, val Value) Value {
 	bound := dict(vm.getBound[bindingKind](bindings))
 	fmt.Printf("bound %x\n", bound)
 
-	symPtr := p.first()
-	i := symPtr.Next(vm)
+	fl := firstLast(vm.read(ptr(p.firstLast())))
+	first := fl.first()
+	i := first.Next(vm)
 
 	for i != 0 {
-		sym := i.sym(vm)
+		sym := sym(i.pval(vm))
 		// dict := pDict(bound.val())
 		// fmt.Printf("@ %x\n", dict)
 		// fmt.Printf("dict %s\n", vm.toString(Value(vm.read(ptr(dict)))))
@@ -75,42 +90,42 @@ func getPathExec(vm *VM, val Value) Value {
 	return Value(bound)
 }
 
-func (b pathEntry) next() pPathEntry { return pPathEntry(obj(b).ptr()) }
-func (b pathEntry) sym() sym         { return sym(obj(b).val()) }
+// func (b pathEntry) next() pPathEntry { return pPathEntry(obj(b).ptr()) }
+// func (b pathEntry) sym() sym         { return sym(obj(b).val()) }
 
-func (b pPathEntry) Next(vm *VM) pPathEntry { return pathEntry(vm.read(ptr(b))).next() }
-func (b pPathEntry) sym(vm *VM) sym         { return pathEntry(vm.read(ptr(b))).sym() }
+// func (b pPathEntry) Next(vm *VM) pPathEntry { return pathEntry(vm.read(ptr(b))).next() }
+// func (b pPathEntry) sym(vm *VM) sym         { return pathEntry(vm.read(ptr(b))).sym() }
 
-type pathBuilder struct {
-	first pPathEntry
-	last  pPathEntry
-}
+// type pathBuilder struct {
+// 	first pPathEntry
+// 	last  pPathEntry
+// }
 
-func (b *pathBuilder) add(vm *VM, sym sym) {
-	next := pPathEntry(vm.alloc(cell(makeObj(int(sym), 0, PathType))))
-	if b.last == 0 {
-		b.first = next
-		b.last = next
-	} else {
-		cur := pathEntry(vm.read(ptr(b.last)))
-		vm.write(ptr(b.last), cell(makeObj(int(cur.sym()), ptr(next), PathType)))
-		b.last = next
-	}
-}
+// func (b *pathBuilder) add(vm *VM, sym sym) {
+// 	next := pPathEntry(vm.alloc(cell(makeObj(int(sym), 0, PathType))))
+// 	if b.last == 0 {
+// 		b.first = next
+// 		b.last = next
+// 	} else {
+// 		cur := pathEntry(vm.read(ptr(b.last)))
+// 		vm.write(ptr(b.last), cell(makeObj(int(cur.sym()), ptr(next), PathType)))
+// 		b.last = next
+// 	}
+// }
 
-func (b pathBuilder) get(kind int) path {
-	return path(makeObj(0, ptr(b.first), kind))
-}
+// func (b pathBuilder) get(kind int) path {
+// 	return path(makeObj(0, ptr(b.first), kind))
+// }
 
-func pathToString(vm *VM, p pathEntry) string {
+func pathToString(vm *VM, p path) string {
 	var result strings.Builder
 
-	result.WriteString(vm.InverseSymbols[p.sym()])
-	i := p.next()
+	fl := firstLast(vm.read(ptr(p.firstLast())))
+	i := fl.first()
 
 	for i != 0 {
 		result.WriteByte('/')
-		result.WriteString(vm.InverseSymbols[i.sym(vm)])
+		result.WriteString(vm.InverseSymbols[sym(i.pval(vm))])
 		i = i.Next(vm)
 	}
 

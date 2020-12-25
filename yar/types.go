@@ -181,10 +181,10 @@ func makeString(value int) imm {
 
 // V M T
 
-func identity(vm *VM, value Value) Value                      { return value }
-func execNotImplemented(vm *VM, value Value) Value            { panic("not implemented") }
-func bindNotImplemented(vm *VM, ptr ptr, factory bindFactory) { panic("not implemented") }
-func bindNothing(vm *VM, ptr ptr, factory bindFactory)        {}
+func identity(vm *VM, value Value) Value                          { return value }
+func execNotImplemented(vm *VM, value Value) Value                { panic("not implemented") }
+func bindNotImplemented(vm *VM, value Value, factory bindFactory) { panic("not implemented") }
+func bindNothing(vm *VM, value Value, factory bindFactory)        {}
 
 var (
 	execFunc = []func(vm *VM, value Value) Value{
@@ -203,7 +203,7 @@ var (
 		identity,
 	}
 
-	bindFunc = []func(vm *VM, ptr ptr, factory bindFactory){
+	bindFunc = []func(vm *VM, value Value, factory bindFactory){
 		blockBind,
 		wordBind,
 		wordBind,
