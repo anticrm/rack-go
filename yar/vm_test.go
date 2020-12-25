@@ -138,6 +138,14 @@ func TestAppend(t *testing.T) {
 	t.Logf("result: %016x", result)
 }
 
+func TestError(t *testing.T) {
+	vm := NewVM(1000, 100)
+	BootVM(vm)
+	code := vm.Parse("unknown 5")
+	result := vm.BindAndExec(code)
+	t.Logf("result: %016x", result)
+}
+
 func TestSave(t *testing.T) {
 	// vm := NewVM(1000, 100)
 	// BootVM(vm)

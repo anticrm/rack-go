@@ -41,6 +41,7 @@ cluster: make-object [
 	docker-service: fn [image port] [
 		foreach node nodes [
 			repeat cpu node/cpus [
+				print node
 				append node/docker-procs make-object [image: image port: port]
 			]
 		]

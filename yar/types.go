@@ -15,7 +15,10 @@
 
 package yar
 
-import "strconv"
+import (
+	"fmt"
+	"strconv"
+)
 
 type ptr uint
 type cell int64
@@ -34,6 +37,7 @@ const (
 	PathType    = iota
 	GetPathType = iota
 	StringType  = iota
+	ErrorType   = iota
 	LastType    = iota
 )
 
@@ -130,6 +134,18 @@ func intToString(vm *VM, b Value) string {
 	return strconv.Itoa(b.Val())
 }
 
+type Error Value
+
+func MakeError(value int) Error {
+	return Error(makeValue(value, ErrorType))
+}
+func (e Error) Value() Value { return Value(e) }
+func (v Value) Error() Error { return Error(v) }
+
+func errorToString(vm *VM, b Value) string {
+	return fmt.Sprintf("Error, code: %d", b.Val())
+}
+
 type boolean Value
 
 func MakeBool(value bool) boolean {
@@ -205,6 +221,7 @@ var (
 		procExec,
 		pathExec,
 		getPathExec,
+		identity,
 		identity,
 	}
 

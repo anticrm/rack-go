@@ -26,7 +26,7 @@ func TestClusterInit(t *testing.T) {
 	yar.BootVM(vm)
 	vm.Library.Add(clusterPackage())
 	clusterModule(vm)
-	code := vm.Parse("cluster/init cluster/docker-service")
+	code := vm.Parse("cluster/init cluster/docker-service \"redis\" \"redis\"")
 	result := vm.BindAndExec(code)
 	t.Logf("result: %016x", result)
 	vm.Dump()

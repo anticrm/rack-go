@@ -92,6 +92,7 @@ func NewVM(memSize int, stackSize int) *VM {
 	vm.toStringFunc[MapType] = dictToString
 	vm.toStringFunc[IntegerType] = intToString
 	vm.toStringFunc[StringType] = stringToString
+	vm.toStringFunc[ErrorType] = errorToString
 
 	vm.Dictionary = vm.AllocDict()
 	vm.initBindings()
@@ -238,7 +239,7 @@ func (vm *VM) call(block Block) Value {
 	pc := vm.pc
 	vm.pc = block.First(vm)
 	var result Value
-	for vm.pc != 0 {
+	for vm.pc != 0 && result.Kind() != ErrorType {
 		result = vm.Next()
 	}
 	vm.pc = pc

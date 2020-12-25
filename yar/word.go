@@ -75,14 +75,6 @@ func setWordBind(vm *VM, value Value, factory bindFactory) {
 }
 
 func wordExec(vm *VM, val Value) Value {
-	// w := Word(val)
-	// bindings := Value(vm.read(w.bindings()))
-	// if bindings == 0 {
-	// 	panic("word not bound")
-	// }
-	// bindingKind := bindings.Kind()
-	// bound := vm.getBound[bindingKind](bindings)
-	// return vm.execFunc[bound.Kind()](vm, bound)
 	bound := getWordExec(vm, val)
 	return vm.execFunc[bound.Kind()](vm, bound)
 }
@@ -92,13 +84,10 @@ func getWordExec(vm *VM, val Value) Value {
 	bindings := Binding(vm.read(ptr(w.bindings())))
 	if bindings == 0 {
 		fmt.Printf("%016x, %d, %s\n", val, w.Sym(), vm.InverseSymbols[w.Sym()])
-		panic("word not bound")
+		return MakeError(1).Value()
 	}
 	bindingKind := bindings.Kind()
 	bound := vm.getBound[bindingKind](bindings)
-	// if val.Kind() == GetWordType {
-	// 	fmt.Printf(" // %s\n", vm.toString(bound))
-	// }
 	return bound
 }
 
