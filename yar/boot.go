@@ -127,11 +127,11 @@ func makeObject(vm *VM) Value {
 	object := vm.AllocDict()
 
 	bind(vm, block, func(sym sym, create bool) Binding {
-		symValPtr := object.find(vm, sym)
+		symValPtr := object.Find(vm, sym)
 		if symValPtr == 0 {
 			if create {
-				object.Put(vm, sym, 0)
-				symValPtr = object.find(vm, sym) // TODO: fix this garbage
+				symValPtr = object.Put(vm, sym, 0)
+				// symValPtr = object.Find(vm, sym) // TODO: fix this garbage
 			} else {
 				return 0
 			}
@@ -140,7 +140,7 @@ func makeObject(vm *VM) Value {
 	})
 
 	vm.call(block)
-	return Value(vm.read(ptr(object)))
+	return object.Value()
 }
 
 // func get(vm *VM) Value {

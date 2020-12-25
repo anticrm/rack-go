@@ -79,7 +79,7 @@ func getPathExec(vm *VM, val Value) Value {
 		// dict := pDict(bound.val())
 		// fmt.Printf("@ %x\n", dict)
 		// fmt.Printf("dict %s\n", vm.toString(Value(vm.read(ptr(dict)))))
-		sv := symval(vm.read(ptr(bound.find(vm, sym))))
+		sv := symval(vm.read(ptr(bound.Find(vm, sym))))
 		bound = dict(vm.read(sv.val()))
 		i = i.Next(vm)
 	}
