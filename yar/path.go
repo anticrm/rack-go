@@ -16,6 +16,7 @@
 package yar
 
 import (
+	"fmt"
 	"strings"
 )
 
@@ -45,6 +46,12 @@ func (vm *VM) AllocGetPath() path {
 	bindings := pBinding(vm.alloc(0))
 	firstlast := pFirstLast(vm.alloc(0))
 	return _makePath(bindings, firstlast, GetPathType)
+}
+
+func toPathAnotherKind(path path, kind int) path {
+	bindings := path.bindings()
+	firstlast := path.firstLast()
+	return _makePath(bindings, firstlast, kind)
 }
 
 func pathBind(vm *VM, value Value, factory bindFactory) {
@@ -93,6 +100,40 @@ func pathExec(vm *VM, val Value) Value {
 	bound := getPathExec(vm, val)
 	return vm.execFunc[bound.Kind()](vm, bound)
 	// return getPathExec(vm, val)
+}
+
+func setPathExec(vm *VM, val Value) Value {
+	p := val.Path()
+	bindings := Binding(vm.read(ptr(p.bindings())))
+	if bindings == 0 {
+		// fmt.Printf("%016x, %d, %s\n", val, p.sym(), vm.InverseSymbols[w.Sym()])
+		panic("getpath not bound")
+	}
+	bindingKind := bindings.Kind()
+	bound := vm.getBound[bindingKind](bindings).Dict()
+	// fmt.Printf("bound %s\n", vm.toString(bound.Value()))
+
+	fl := firstLast(vm.read(ptr(p.firstLast())))
+	first := fl.first()
+	i := first.Next(vm)
+
+	var valptr ptr
+	for i != 0 {
+		sym := sym(i.pval(vm))
+		// fmt.Printf("looking for sym: %s\n", vm.InverseSymbols[sym])
+		psv := bound.Find(vm, sym)
+		sv := symval(vm.read(ptr(psv)))
+		// fmt.Printf("BOUND: %016x\n", psv)
+		valptr = sv.val()
+		bound = dict(vm.read(valptr))
+		i = i.Next(vm)
+	}
+
+	toWrite := vm.Next()
+	fmt.Printf("to write %016x\n", toWrite)
+	vm.write(valptr, cell(toWrite))
+
+	return toWrite
 }
 
 // func (b pathEntry) next() pPathEntry { return pPathEntry(obj(b).ptr()) }

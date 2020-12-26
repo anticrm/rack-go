@@ -124,6 +124,10 @@ func (vm *VM) Parse(s string) Block {
 						}
 						i++
 					}
+					if i < len(s) && s[i] == ':' {
+						path = toPathAnotherKind(path, SetPathType)
+						i++
+					}
 					result.Add(vm, path.Value())
 					break
 				}

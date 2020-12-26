@@ -38,6 +38,7 @@ const (
 	GetPathType = iota
 	StringType  = iota
 	ErrorType   = iota
+	SetPathType = iota
 	LastType    = iota
 )
 
@@ -223,6 +224,7 @@ var (
 		getPathExec,
 		identity,
 		identity,
+		setPathExec,
 	}
 
 	bindFunc = []func(vm *VM, value Value, factory bindFactory){
@@ -239,5 +241,7 @@ var (
 		pathBind,
 		pathBind,
 		bindNothing,
+		bindNothing,
+		pathBind, // set-path
 	}
 )

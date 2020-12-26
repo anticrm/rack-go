@@ -16,6 +16,7 @@
 package yar
 
 import (
+	"fmt"
 	"testing"
 )
 
@@ -150,6 +151,15 @@ func TestIn(t *testing.T) {
 	vm := NewVM(1000, 100)
 	BootVM(vm)
 	code := vm.Parse("x: make-object [a: 41 b: 2] get in x 'a")
+	result := vm.BindAndExec(code)
+	t.Logf("result: %016x", result)
+}
+
+func TestSetPath(t *testing.T) {
+	vm := NewVM(1000, 100)
+	BootVM(vm)
+	code := vm.Parse("x: make-object [a: 41 b: 2] x/a: 256 print x/a")
+	fmt.Println(vm.ToString(code.Value()))
 	result := vm.BindAndExec(code)
 	t.Logf("result: %016x", result)
 }
