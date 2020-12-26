@@ -46,6 +46,12 @@ cluster: make-object [
 			]
 		]
 	]
+	node-info: fn [nodeID nodeName cores cpuModelName /local node] [
+		node: get in nodes nodeName
+		if unset? node [node: set in nodes nodeName make-object []]
+		node/cores: cores
+		node/cpuModelName: cpuModelName
+	]
 ]
 `
 

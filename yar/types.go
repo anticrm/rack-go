@@ -213,7 +213,7 @@ var (
 		wordExec,
 		getWordExec,
 		setWordExec,
-		execNotImplemented,
+		identity, // quote
 		identity, // map
 		identity, // int
 		identity, // bool
@@ -230,7 +230,7 @@ var (
 		wordBind,
 		wordBind,
 		setWordBind,
-		bindNotImplemented,
+		wordBind,
 		bindNothing, // map
 		bindNothing,
 		bindNothing,

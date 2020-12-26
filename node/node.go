@@ -32,8 +32,13 @@ import (
 
 const clusterID = uint64(128)
 
+type NodeConfig struct {
+	Name string `yaml:"name"`
+	Addr string `yaml:"addr"`
+}
+
 type ClusterConfig struct {
-	Nodes []string `yaml:"nodes"`
+	Nodes []NodeConfig `yaml:"nodes"`
 }
 
 type Cluster struct {
@@ -47,12 +52,14 @@ func NewCluster(config *ClusterConfig) *Cluster {
 func (c *Cluster) Start(nodeAddr string) {
 	fmt.Printf("cluster nodes:\n")
 	var nodeID uint64
+	var nodeName string
 	initialMembers := make(map[uint64]string)
 	if true {
 		for i, v := range c.config.Nodes {
 			id := uint64(i + 1)
-			initialMembers[id] = v
-			if v == nodeAddr {
+			initialMembers[id] = v.Addr
+			if v.Addr == nodeAddr {
+				nodeName = v.Name
 				nodeID = id
 			}
 			fmt.Printf(" - %s\n", v)
@@ -63,7 +70,7 @@ func (c *Cluster) Start(nodeAddr string) {
 		log.Fatalf("this node is not a part of cluster (%s)", nodeAddr)
 	}
 
-	fmt.Fprintf(os.Stdout, "node address: %s\n", nodeAddr)
+	fmt.Fprintf(os.Stdout, "node name: %s, address: %s\n", nodeName, nodeAddr)
 
 	// change the log verbosity
 	logger.GetLogger("raft").SetLevel(logger.ERROR)
@@ -200,6 +207,7 @@ func (c *Cluster) Start(nodeAddr string) {
 		}
 	})
 
+	startHostMonitor(nodeID, nodeName, cmdChannel)
 	startCtl(cmdChannel)
 
 	raftStopper.Wait()

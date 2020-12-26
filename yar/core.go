@@ -166,6 +166,30 @@ func makeObject(vm *VM) Value {
 	return object.Value()
 }
 
+func in(vm *VM) Value {
+	m := vm.Next().Dict()
+	w := vm.Next().Word()
+	sym := w.Sym()
+
+	symval := m.Find(vm, sym)
+	if symval == 0 {
+		return 0
+	}
+	binding := makeMapBinding(ptr(symval))
+	return Value(_makeWord(sym, pBinding(vm.alloc(cell(binding))), QuoteType))
+}
+
+func get(vm *VM) Value {
+	w := vm.Next()
+
+	return getWordExec(vm, w)
+	// return vm.execFunc[bound.Kind()](vm, bound)
+}
+
+func none(vm *VM) Value {
+	return 0
+}
+
 func CorePackage() *Pkg {
 	result := NewPackage("core")
 	result.AddFunc("add", add)
@@ -178,6 +202,9 @@ func CorePackage() *Pkg {
 	result.AddFunc("print", print)
 	result.AddFunc("append", _append)
 	result.AddFunc("repeat", repeat)
+	result.AddFunc("in", in)
+	result.AddFunc("get", get)
+	result.AddFunc("none", none)
 	return result
 }
 
@@ -192,6 +219,9 @@ foreach: load-native "core/foreach"
 print: load-native "core/print"
 append: load-native "core/append"
 repeat: load-native "core/repeat"
+in: load-native "core/in"
+get: load-native "core/get"
+none: load-native "core/none"
 `
 
 func CoreModule(vm *VM) Value {

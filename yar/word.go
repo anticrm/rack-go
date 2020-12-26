@@ -55,6 +55,11 @@ func (vm *VM) AllocSetWord(sym sym) Word {
 	return _makeWord(sym, bindings, SetWordType)
 }
 
+func (vm *VM) AllocQuoteWord(sym sym) Word {
+	bindings := pBinding(vm.alloc(0))
+	return _makeWord(sym, bindings, QuoteType)
+}
+
 func (w Word) Sym() sym           { return sym(obj(w).ptr()) }
 func (w Word) bindings() pBinding { return pBinding(obj(w).val()) }
 

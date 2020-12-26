@@ -55,6 +55,7 @@ func (s *StateMachine) Lookup(query interface{}) (interface{}, error) {
 
 // Update updates the object using the specified committed raft entry.
 func (s *StateMachine) Update(data []byte) (sm.Result, error) {
+	fmt.Printf("NodeID: %04x\n", s.NodeID)
 	fmt.Printf("> %s\n", string(data))
 	code := s.VM.Parse(string(data))
 	result := s.VM.BindAndExec(code)

@@ -30,8 +30,8 @@ const (
 	LastBinding  = iota
 )
 
-func makeMapBinding(value ptr) Binding {
-	return Binding(makeImm(int(value), MapBinding))
+func makeMapBinding(symval ptr) Binding {
+	return Binding(makeImm(int(symval), MapBinding))
 }
 
 func MakeStackBinding(value int) Binding {

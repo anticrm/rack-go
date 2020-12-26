@@ -100,6 +100,9 @@ func (vm *VM) Parse(s string) Block {
 				if s[i] == ':' {
 					kind = SetWordType
 					i++
+				} else if s[i] == '\'' {
+					kind = QuoteType
+					i++
 				} else if s[i] == '/' {
 					var path path
 
@@ -133,6 +136,8 @@ func (vm *VM) Parse(s string) Block {
 				result.Add(vm, vm.AllocGetWord(vm.GetSymbolID(ident)).Value())
 			case SetWordType:
 				result.Add(vm, vm.AllocSetWord(vm.GetSymbolID(ident)).Value())
+			case QuoteType:
+				result.Add(vm, vm.AllocQuoteWord(vm.GetSymbolID(ident)).Value())
 			default:
 				fmt.Printf("kind %v", kind)
 				panic("not implemented other words")
